@@ -115,9 +115,9 @@ The Business Dashboard provides:
 
 ## 👥 Team Development
 
-* **Developer 1:** Admin Dashboard & Data
-* **Developer 2:** Navbar, Footer & Token Components
-* **Developer 3:** Venue, Booking & JavaScript Showcase Components
+* **Harsehaj:** Admin Dashboard & Data
+* **Anupriya:** Navbar, Footer & Token Components
+* **Avni:** Venue, Booking & JavaScript Showcase Components
 
 ## 🎯 Project Goal
 
