@@ -429,103 +429,212 @@ export default function App() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
               
               {/* Hero Banner Header */}
-              <div className="glass-panel animate-slide-down" style={{
-                padding: '2.5rem 2rem',
-                position: 'relative',
-                overflow: 'hidden',
-                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(6, 182, 212, 0.1) 100%)',
-              }}>
+              <section
+                className="glass-panel animate-slide-down"
+                aria-label="QueueLess Hero Introduction"
+                style={{
+                  padding: '2.5rem 2rem',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(6, 182, 212, 0.08) 100%)',
+                  borderRadius: '20px',
+                  border: '1px solid var(--border-color)',
+                }}
+              >
                 <div style={{ maxWidth: '680px', position: 'relative', zIndex: 2 }}>
-                  <span className="badge badge-indigo" style={{ marginBottom: '0.6rem' }}>
-                    <Sparkles size={14} /> Smart Virtual Queue Management
-                  </span>
-                  <h1 style={{ fontSize: '2.4rem', lineHeight: 1.2, marginBottom: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
+                    <span className="badge badge-indigo" style={{ letterSpacing: '0.04em' }}>
+                      <Sparkles size={13} /> SMART QUEUE MANAGEMENT
+                    </span>
+                    <span className="badge badge-emerald">
+                      REAL-TIME SYNC
+                    </span>
+                  </div>
+
+                  <h1 style={{
+                    fontSize: 'clamp(1.8rem, 4vw, 2.6rem)',
+                    fontWeight: 800,
+                    lineHeight: 1.2,
+                    marginBottom: '0.85rem',
+                    letterSpacing: '-0.02em',
+                  }}>
                     Skip Physical Lines. <br />
                     <span className="gradient-text">Queue Remotely From Anywhere.</span>
                   </h1>
-                  <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-                    Book remote virtual tokens for Hospitals, Banks, Salons, Govt Offices & Cafeterias. Get real-time AI wait time predictions, QR check-in codes, and turn alerts directly on your device!
+
+                  <p style={{
+                    fontSize: '0.96rem',
+                    color: 'var(--text-secondary)',
+                    marginBottom: '1.75rem',
+                    lineHeight: 1.6,
+                    maxWidth: '580px',
+                  }}>
+                    Book digital queue tokens for Hospitals, Banks, Salons, Government Offices & Cafeterias. Get instant AI wait time estimates, encrypted QR check-ins, and turn alerts straight to your device.
                   </p>
 
                   {/* Search Bar Input */}
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    background: 'var(--card-bg)',
-                    backdropFilter: 'blur(12px)',
-                    border: '1px solid var(--card-hover-border)',
+                    background: 'var(--input-bg)',
+                    border: '1px solid var(--border-color)',
                     borderRadius: '16px',
-                    padding: '0.4rem 0.5rem 0.4rem 1rem',
-                    boxShadow: 'var(--shadow-lg)',
-                    maxWidth: '520px',
+                    padding: '0.45rem 0.65rem 0.45rem 1.15rem',
+                    boxShadow: 'var(--shadow-md)',
+                    maxWidth: '540px',
+                    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
                   }}>
-                    <Search size={20} style={{ color: 'var(--accent-primary)', flexShrink: 0, marginRight: '0.5rem' }} />
+                    <Search size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0, marginRight: '0.65rem' }} />
                     <input 
                       type="text"
                       placeholder="Search hospitals, banks, salons, or city..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
+                      aria-label="Search venues by name, city, or service"
                       style={{
                         width: '100%',
                         border: 'none',
                         background: 'transparent',
                         color: 'var(--text-primary)',
-                        fontSize: '0.95rem',
+                        fontSize: '0.92rem',
                         outline: 'none',
                       }}
                     />
                     {searchQuery && (
                       <button
+                        type="button"
                         onClick={() => setSearchQuery('')}
-                        style={{ border: 'none', background: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0 0.5rem' }}
+                        aria-label="Clear search input"
+                        style={{
+                          border: 'none',
+                          background: 'none',
+                          color: 'var(--text-muted)',
+                          cursor: 'pointer',
+                          padding: '0.2rem 0.5rem',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                        }}
                       >
                         Clear
                       </button>
                     )}
                   </div>
                 </div>
-              </div>
+              </section>
 
               {/* Category Filter Pills */}
-              <div style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={selectedCategory === cat.id ? 'btn-primary' : 'btn-secondary'}
-                    style={{ fontSize: '0.85rem', borderRadius: '999px', whiteSpace: 'nowrap' }}
-                  >
-                    {cat.name}
-                  </button>
-                ))}
+              <div
+                role="tablist"
+                aria-label="Filter venues by category"
+                style={{
+                  display: 'flex',
+                  gap: '0.5rem',
+                  overflowX: 'auto',
+                  paddingBottom: '0.5rem',
+                  scrollbarWidth: 'none',
+                }}
+              >
+                {CATEGORIES.map((cat) => {
+                  const isSelected = selectedCategory === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={isSelected}
+                      onClick={() => setSelectedCategory(cat.id)}
+                      className={isSelected ? 'btn-primary' : 'btn-secondary'}
+                      style={{
+                        fontSize: '0.82rem',
+                        padding: '0.45rem 1rem',
+                        borderRadius: '999px',
+                        whiteSpace: 'nowrap',
+                        fontWeight: isSelected ? 700 : 500,
+                      }}
+                    >
+                      {cat.name}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Venues Grid */}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                  <h2 style={{ fontSize: '1.3rem' }}>
-                    Available Queues ({filteredVenues.length})
-                  </h2>
+              <section aria-label="Available queues listing">
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '1.25rem',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem',
+                }}>
+                  <div>
+                    <h2 style={{ fontSize: '1.35rem', fontWeight: 800 }}>
+                      Available Queues ({filteredVenues.length})
+                    </h2>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                      Browse active venues and view live waiting times or book a remote token.
+                    </p>
+                  </div>
+
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <span style={{ fontSize: '0.82rem', color: isServerConnected ? 'var(--emerald)' : 'var(--text-secondary)' }}>
-                      {isServerConnected ? '● MongoDB Synced' : '○ Standalone Mode'}
+                    <span style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      color: isServerConnected ? 'var(--emerald)' : 'var(--amber)',
+                      background: isServerConnected ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                      padding: '0.35rem 0.75rem',
+                      borderRadius: '999px',
+                      border: isServerConnected ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(245, 158, 11, 0.25)',
+                    }}>
+                      <span style={{
+                        width: '7px',
+                        height: '7px',
+                        borderRadius: '50%',
+                        background: isServerConnected ? 'var(--emerald)' : 'var(--amber)',
+                      }} />
+                      {isServerConnected ? 'MongoDB Live' : 'Standalone'}
                     </span>
+
                     <button 
+                      type="button"
                       onClick={loadVenuesFromBackend}
                       className="btn-secondary"
-                      style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
-                      title="Refresh from MongoDB"
+                      style={{ padding: '0.4rem 0.7rem', fontSize: '0.8rem' }}
+                      title="Refresh queues from MongoDB"
+                      aria-label="Refresh queues from MongoDB"
                     >
                       <RefreshCw size={13} />
+                      <span style={{ fontSize: '0.75rem' }}>Refresh</span>
                     </button>
                   </div>
                 </div>
 
                 {filteredVenues.length === 0 ? (
-                  <div className="glass-panel" style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-secondary)' }}>
-                    <Building2 size={48} style={{ opacity: 0.4, marginBottom: '0.5rem' }} />
-                    <h3>No matching venues found</h3>
-                    <p style={{ fontSize: '0.85rem', marginTop: '4px' }}>Try adjusting your search query or category filter.</p>
+                  <div className="glass-panel" style={{
+                    textAlign: 'center',
+                    padding: '3.5rem 1.5rem',
+                    color: 'var(--text-secondary)',
+                    borderRadius: '16px',
+                  }}>
+                    <Building2 size={48} style={{ opacity: 0.35, margin: '0 auto 0.75rem' }} />
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      No matching venues found
+                    </h3>
+                    <p style={{ fontSize: '0.86rem', marginTop: '6px', maxWidth: '380px', margin: '6px auto 1.25rem' }}>
+                      We couldn't find any queues matching your search query or selected category.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedCategory('all'); setSearchQuery(''); }}
+                      className="btn-secondary"
+                      style={{ margin: '0 auto', fontSize: '0.82rem' }}
+                    >
+                      Reset Filters
+                    </button>
                   </div>
                 ) : (
                   <div style={{
@@ -543,33 +652,44 @@ export default function App() {
                     ))}
                   </div>
                 )}
-              </div>
+              </section>
 
             </div>
           )}
 
           {/* TAB 2: MY VIRTUAL TOKENS VIEW */}
           {activeTab === 'tokens' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <div style={{ textAlign: 'center', maxWidth: '600px', margin: '0 auto 1rem auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+              <div style={{ textAlign: 'center', maxWidth: '620px', margin: '0 auto 0.5rem auto' }}>
                 <span className="badge badge-emerald" style={{ marginBottom: '0.4rem' }}>
                   Live Digital Wallet
                 </span>
-                <h2 style={{ fontSize: '1.8rem' }}>Your Active Virtual Tokens</h2>
-                <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                  Track live position updates, encrypted QR check-ins, and data-driven AI arrival predictions.
+                <h2 style={{ fontSize: '1.85rem', fontWeight: 800 }}>Your Active Virtual Tokens</h2>
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: 1.5 }}>
+                  Track live queue movements, encrypted QR check-in passes, and dynamic arrival estimations in real-time.
                 </p>
               </div>
 
               {tokens.length === 0 ? (
-                <div className="glass-panel" style={{ textAlign: 'center', padding: '4rem 1.5rem', maxWidth: '500px', margin: '0 auto' }}>
-                  <Ticket size={56} style={{ color: 'var(--accent-primary)', opacity: 0.6, marginBottom: '1rem' }} />
-                  <h3>No Virtual Tokens Issued Yet</h3>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.5rem 0 1.5rem 0' }}>
-                    You haven't booked any remote queue tokens. Browse available venues to join a queue!
+                <div className="glass-panel" style={{
+                  textAlign: 'center',
+                  padding: '4rem 1.5rem',
+                  maxWidth: '520px',
+                  margin: '0 auto',
+                  borderRadius: '16px',
+                }}>
+                  <Ticket size={56} style={{ color: 'var(--accent-primary)', opacity: 0.5, margin: '0 auto 1rem' }} />
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>No Virtual Tokens Issued Yet</h3>
+                  <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', margin: '0.5rem 0 1.5rem 0', lineHeight: 1.5 }}>
+                    You don't have any active tokens in your digital wallet. Join an active queue remotely from any venue to skip physical waiting lines.
                   </p>
-                  <button onClick={() => setActiveTab('explore')} className="btn-primary" style={{ margin: '0 auto' }}>
-                    Explore Venues & Book Queue
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('explore')}
+                    className="btn-primary"
+                    style={{ margin: '0 auto', padding: '0.7rem 1.4rem' }}
+                  >
+                    Browse Venues & Join Queue
                   </button>
                 </div>
               ) : (

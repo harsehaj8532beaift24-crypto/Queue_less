@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { 
   X, 
   MapPin, 
@@ -15,18 +15,27 @@ import {
 import { generateHourlyTraffic } from '../utils/aiPredictor';
 
 export function VenueModal({ venue, onClose, onBookDepartment }) {
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   if (!venue) return null;
 
-  const trafficData = generateHourlyTraffic(venue.id);
+  const trafficData = generateHourlyTraffic(venue.id || venue._id);
+  const departments = venue.departments || [];
 
   return (
-    <div className="modal-overlay animate-fade-in" onClick={onClose}>
+    <div className="modal-overlay animate-fade-in" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="venue-modal-title">
       <div 
         className="glass-modal animate-slide-down"
         style={{
           width: '100%',
-          maxWidth: '680px',
-          maxHeight: '90vh',
+          maxWidth: '640px',
+          maxHeight: '88vh',
           overflowY: 'auto',
           padding: '1.5rem',
           position: 'relative',
@@ -36,48 +45,47 @@ export function VenueModal({ venue, onClose, onBookDepartment }) {
         {/* Close Button */}
         <button
           onClick={onClose}
+          aria-label="Close dialog"
+          className="btn-secondary"
           style={{
             position: 'absolute',
             top: '1rem',
             right: '1rem',
-            background: 'var(--bg-tertiary)',
-            border: '1px solid var(--border-color)',
-            color: 'var(--text-secondary)',
+            width: '32px',
+            height: '32px',
+            minHeight: '32px',
             borderRadius: '50%',
-            width: '36px',
-            height: '36px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
+            padding: 0,
+            zIndex: 10,
           }}
         >
-          <X size={18} />
+          <X size={16} />
         </button>
 
         {/* Modal Header Banner */}
-        <div style={{ display: 'flex', gap: '1.2rem', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', paddingRight: '2rem' }}>
           <img 
             src={venue.image} 
             alt={venue.name}
             style={{
-              width: '100px',
-              height: '100px',
-              borderRadius: '16px',
+              width: '84px',
+              height: '84px',
+              borderRadius: '12px',
               objectFit: 'cover',
+              flexShrink: 0,
             }}
           />
           <div>
-            <span className="badge badge-indigo" style={{ marginBottom: '0.4rem' }}>
-              {venue.categoryName}
+            <span className="badge badge-indigo" style={{ marginBottom: '0.35rem' }}>
+              {venue.categoryName || venue.category}
             </span>
-            <h2 style={{ fontSize: '1.4rem' }}>{venue.name}</h2>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '4px' }}>
-              <MapPin size={14} />
+            <h2 id="venue-modal-title" style={{ fontSize: '1.3rem', lineHeight: 1.25 }}>{venue.name}</h2>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '4px' }}>
+              <MapPin size={13} style={{ flexShrink: 0 }} />
               {venue.address}
             </p>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '2px' }}>
-              <Clock size={14} />
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '2px' }}>
+              <Clock size={13} style={{ flexShrink: 0 }} />
               Open Hours: {venue.openHours}
             </p>
           </div>
@@ -87,68 +95,71 @@ export function VenueModal({ venue, onClose, onBookDepartment }) {
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '0.75rem',
-          marginBottom: '1.5rem',
+          gap: '0.65rem',
+          marginBottom: '1.25rem',
         }}>
-          <div style={{ background: 'var(--bg-tertiary)', padding: '0.85rem', borderRadius: '12px', textAlign: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Active Counters</span>
-            <p style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-primary)', marginTop: '2px' }}>
+          <div style={{ background: 'var(--bg-tertiary)', padding: '0.75rem', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block' }}>Active Counters</span>
+            <p style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--accent-primary)', marginTop: '2px' }}>
               {venue.activeCounters} / {venue.totalCounters}
             </p>
           </div>
 
-          <div style={{ background: 'var(--bg-tertiary)', padding: '0.85rem', borderRadius: '12px', textAlign: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Waiting Tokens</span>
-            <p style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--amber)', marginTop: '2px' }}>
+          <div style={{ background: 'var(--bg-tertiary)', padding: '0.75rem', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block' }}>Waiting Tokens</span>
+            <p style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--amber)', marginTop: '2px' }}>
               {venue.currentQueueLength} People
             </p>
           </div>
 
-          <div style={{ background: 'var(--bg-tertiary)', padding: '0.85rem', borderRadius: '12px', textAlign: 'center' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Avg Service Time</span>
-            <p style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--emerald)', marginTop: '2px' }}>
+          <div style={{ background: 'var(--bg-tertiary)', padding: '0.75rem', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block' }}>Avg Service Time</span>
+            <p style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--emerald)', marginTop: '2px' }}>
               {venue.avgServiceTimeMins} Mins
             </p>
           </div>
         </div>
 
         {/* Departments / Service Counters List */}
-        <h3 style={{ fontSize: '1.05rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <Layers size={18} style={{ color: 'var(--accent-primary)' }} />
+        <h3 style={{ fontSize: '0.98rem', marginBottom: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <Layers size={16} style={{ color: 'var(--accent-primary)' }} />
           Select Service Counter to Join Queue
         </h3>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginBottom: '1.5rem' }}>
-          {venue.departments.map((dept) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', marginBottom: '1.25rem' }}>
+          {departments.map((dept) => (
             <div 
-              key={dept.id}
+              key={dept.id || dept._id}
               style={{
                 background: 'var(--bg-tertiary)',
                 border: '1px solid var(--border-color)',
-                padding: '0.85rem 1rem',
-                borderRadius: '12px',
+                padding: '0.75rem 0.95rem',
+                borderRadius: '10px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                transition: 'all 0.2s ease',
+                gap: '0.75rem',
               }}
             >
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{dept.name}</span>
-                  <span className="badge badge-emerald" style={{ fontSize: '0.65rem' }}>Prefix: {dept.prefix}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{dept.name}</span>
+                  <span className="badge badge-emerald" style={{ fontSize: '0.65rem', padding: '0.05rem 0.35rem' }}>
+                    Prefix: {dept.prefix}
+                  </span>
                 </div>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
                   Average service duration ~{dept.avgTime} mins per customer
                 </p>
               </div>
 
               <button
+                type="button"
                 onClick={() => onBookDepartment(venue, dept)}
                 className="btn-primary"
-                style={{ fontSize: '0.8rem', padding: '0.45rem 1rem' }}
+                style={{ fontSize: '0.8rem', height: '34px', minHeight: '34px', padding: '0 0.85rem' }}
               >
-                <Zap size={14} />
+                <Zap size={13} />
                 Book Token
               </button>
             </div>
@@ -156,46 +167,46 @@ export function VenueModal({ venue, onClose, onBookDepartment }) {
         </div>
 
         {/* AI Traffic Load Breakdown */}
-        <h3 style={{ fontSize: '1.05rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <BarChart2 size={18} style={{ color: 'var(--emerald)' }} />
+        <h3 style={{ fontSize: '0.98rem', marginBottom: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <BarChart2 size={16} style={{ color: 'var(--emerald)' }} />
           AI Traffic Forecast (Today)
         </h3>
 
         <div style={{
           background: 'var(--bg-tertiary)',
-          padding: '1rem',
-          borderRadius: '12px',
+          padding: '0.85rem',
+          borderRadius: '10px',
           border: '1px solid var(--border-color)',
         }}>
           <div style={{
             display: 'flex',
             alignItems: 'flex-end',
-            gap: '0.4rem',
-            height: '100px',
-            paddingTop: '1rem',
+            gap: '0.35rem',
+            height: '90px',
+            paddingTop: '0.5rem',
           }}>
             {trafficData.map((item, idx) => (
-              <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+              <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', height: '100%', justifyContent: 'flex-end' }}>
                 <div 
                   style={{
                     width: '100%',
-                    height: `${(item.count / 80) * 100}%`,
+                    height: `${Math.max(8, Math.round((item.count / 80) * 100))}%`,
                     background: item.isPeak ? 'var(--rose)' : 'var(--accent-primary)',
-                    borderRadius: '4px 4px 0 0',
-                    transition: 'height 0.4s ease',
+                    borderRadius: '3px 3px 0 0',
+                    transition: 'height 0.3s ease',
                   }}
                   title={`${item.hour}: ${item.count} estimated visitors`}
                 />
-                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{item.hour.split(' ')[0]}</span>
+                <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>{item.hour.split(' ')[0]}</span>
               </div>
             ))}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.75rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.65rem' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--rose)' }} /> Peak Hours
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--rose)' }} /> Peak Hours
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-primary)' }} /> Normal Traffic
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--accent-primary)' }} /> Normal Traffic
             </span>
           </div>
         </div>

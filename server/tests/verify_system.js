@@ -13,7 +13,13 @@ import ServiceHistory from '../models/ServiceHistory.js';
 import { bookToken, callNextToken, updateTokenStatus } from '../services/queueService.js';
 import { calculateWaitTimePrediction } from '../services/predictionService.js';
 
-dotenv.config();
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config(); // fallback to root if present
 
 let passed = 0;
 let failed = 0;

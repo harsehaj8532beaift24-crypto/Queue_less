@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Ticket, 
   Building2, 
@@ -29,6 +29,18 @@ export default function Navbar({
   openJsShowcase
 }) {
   const [showNotifications, setShowNotifications] = useState(false);
+  const notifRef = useRef(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <header style={{
@@ -37,8 +49,10 @@ export default function Navbar({
       zIndex: 100,
       backgroundColor: 'var(--header-bg)',
       backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
       borderBottom: '1px solid var(--border-color)',
-      padding: '0.85rem 0',
+      padding: '0.65rem 0',
+      transition: 'background-color 0.2s ease',
     }}>
       <div className="app-container" style={{
         display: 'flex',
@@ -47,78 +61,114 @@ export default function Navbar({
         flexWrap: 'wrap',
         gap: '0.75rem',
       }}>
-        {/* Brand Logo */}
+        {/* Brand Logo & Live Status */}
         <div 
           onClick={() => setActiveTab('explore')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && setActiveTab('explore')}
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '0.75rem',
             cursor: 'pointer',
+            userSelect: 'none',
           }}
         >
           <div style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '12px',
+            width: '38px',
+            height: '38px',
+            borderRadius: '10px',
             background: 'linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: '#fff',
-            boxShadow: '0 4px 14px var(--accent-glow)',
+            boxShadow: '0 2px 10px var(--accent-glow)',
+            flexShrink: 0,
           }}>
-            <Ticket size={24} />
+            <Ticket size={22} />
           </div>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span style={{ fontSize: '1.4rem', fontWeight: 800 }} className="gradient-text">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em' }} className="gradient-text">
                 QueueLess
               </span>
-              <span className={`badge ${isServerConnected ? 'badge-emerald' : 'badge-amber'}`} style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem' }}>
+              <span 
+                className={`badge ${isServerConnected ? 'badge-emerald' : 'badge-amber'}`} 
+                style={{ fontSize: '0.65rem', padding: '0.1rem 0.45rem' }}
+                title={isServerConnected ? 'Connected to MongoDB & Socket.IO server' : 'Connecting to local/remote server'}
+              >
                 {isServerConnected ? '● LIVE DB' : '○ CONNECTING'}
               </span>
             </div>
-            <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '-2px' }}>
+            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '-2px' }}>
               Smart Virtual Queue Management
             </p>
           </div>
         </div>
 
-        {/* Desktop Navigation Links */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+        {/* Navigation Tabs */}
+        <nav 
+          aria-label="Main Navigation"
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.4rem', 
+            background: 'var(--bg-secondary)', 
+            padding: '3px', 
+            borderRadius: '12px',
+            border: '1px solid var(--border-color)',
+            flexWrap: 'wrap',
+          }}
+        >
           <button
             onClick={() => setActiveTab('explore')}
             className={activeTab === 'explore' ? 'btn-primary' : 'btn-secondary'}
-            style={{ fontSize: '0.9rem' }}
+            style={{ 
+              height: '34px',
+              fontSize: '0.825rem', 
+              padding: '0 0.9rem',
+              borderRadius: '9px',
+              border: activeTab === 'explore' ? undefined : 'none',
+              background: activeTab === 'explore' ? undefined : 'transparent',
+              boxShadow: activeTab === 'explore' ? undefined : 'none',
+            }}
           >
-            <Building2 size={18} />
+            <Building2 size={16} />
             <span>Explore Venues</span>
           </button>
 
           <button
             onClick={() => setActiveTab('tokens')}
             className={activeTab === 'tokens' ? 'btn-primary' : 'btn-secondary'}
-            style={{ fontSize: '0.9rem', position: 'relative' }}
+            style={{ 
+              height: '34px',
+              fontSize: '0.825rem', 
+              padding: '0 0.9rem',
+              borderRadius: '9px',
+              border: activeTab === 'tokens' ? undefined : 'none',
+              background: activeTab === 'tokens' ? undefined : 'transparent',
+              boxShadow: activeTab === 'tokens' ? undefined : 'none',
+              position: 'relative',
+            }}
           >
-            <Ticket size={18} />
-            <span>My Virtual Tokens</span>
+            <Ticket size={16} />
+            <span>My Tokens</span>
             {tokensCount > 0 && (
               <span style={{
-                position: 'absolute',
-                top: '-4px',
-                right: '-4px',
                 background: 'var(--rose)',
                 color: '#fff',
                 borderRadius: '999px',
-                fontSize: '0.7rem',
+                fontSize: '0.65rem',
                 fontWeight: 700,
-                width: '20px',
-                height: '20px',
-                display: 'flex',
+                minWidth: '18px',
+                height: '18px',
+                padding: '0 4px',
+                display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 2px 8px var(--rose-glow)',
+                marginLeft: '0.2rem',
               }}>
                 {tokensCount}
               </span>
@@ -128,40 +178,60 @@ export default function Navbar({
           <button
             onClick={() => setActiveTab('admin')}
             className={activeTab === 'admin' ? 'btn-primary' : 'btn-secondary'}
-            style={{ fontSize: '0.9rem' }}
+            style={{ 
+              height: '34px',
+              fontSize: '0.825rem', 
+              padding: '0 0.9rem',
+              borderRadius: '9px',
+              border: activeTab === 'admin' ? undefined : 'none',
+              background: activeTab === 'admin' ? undefined : 'transparent',
+              boxShadow: activeTab === 'admin' ? undefined : 'none',
+            }}
           >
-            <BarChart3 size={18} />
+            <BarChart3 size={16} />
             <span>Business Portal</span>
           </button>
 
           <button
             onClick={openJsShowcase}
             className="btn-secondary"
-            style={{ fontSize: '0.9rem' }}
             title="Coursework Syllabus Implementation"
+            style={{ 
+              height: '34px',
+              fontSize: '0.825rem', 
+              padding: '0 0.85rem',
+              borderRadius: '9px',
+              border: 'none',
+              background: 'transparent',
+              boxShadow: 'none',
+              color: 'var(--accent-primary)',
+            }}
           >
-            <Code2 size={18} style={{ color: 'var(--accent-primary)' }} />
+            <Code2 size={16} />
             <span>Syllabus Guide</span>
           </button>
         </nav>
 
         {/* Right Actions: User Profile / Auth, Notifications & Theme Toggle */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {/* User Auth Info */}
           {currentUser ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.4rem',
-                background: 'var(--bg-tertiary)',
-                padding: '0.35rem 0.65rem',
-                borderRadius: '10px',
-                fontSize: '0.82rem',
+                background: 'var(--bg-secondary)',
+                padding: '0.25rem 0.6rem',
+                borderRadius: '9px',
+                fontSize: '0.8rem',
                 border: '1px solid var(--border-color)',
+                height: '36px',
               }}>
-                <User size={14} style={{ color: 'var(--accent-primary)' }} />
-                <span style={{ fontWeight: 600 }}>{currentUser.name}</span>
+                <User size={14} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+                <span style={{ fontWeight: 600, maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {currentUser.name}
+                </span>
                 <span className="badge badge-indigo" style={{ fontSize: '0.65rem', padding: '0.05rem 0.35rem' }}>
                   {currentUser.role}
                 </span>
@@ -169,17 +239,18 @@ export default function Navbar({
               <button
                 onClick={onLogout}
                 className="btn-secondary"
+                aria-label="Sign Out"
                 title="Sign Out"
-                style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem' }}
+                style={{ width: '36px', height: '36px', padding: 0, minHeight: '36px' }}
               >
-                <LogOut size={14} />
+                <LogOut size={15} />
               </button>
             </div>
           ) : (
             <button
               onClick={onOpenAuth}
               className="btn-primary"
-              style={{ fontSize: '0.85rem', padding: '0.45rem 0.85rem' }}
+              style={{ fontSize: '0.825rem', height: '36px', minHeight: '36px', padding: '0 0.95rem' }}
             >
               <LogIn size={15} />
               <span>Sign In</span>
@@ -187,30 +258,30 @@ export default function Navbar({
           )}
 
           {/* Notification Bell Dropdown */}
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative' }} ref={notifRef}>
             <button
               onClick={() => setShowNotifications(!showNotifications)}
               className="btn-secondary"
-              aria-label="Notifications"
+              aria-label="View queue notifications"
               style={{
-                width: '38px',
-                height: '38px',
+                width: '36px',
+                height: '36px',
+                minHeight: '36px',
                 padding: 0,
-                justifyContent: 'center',
                 position: 'relative',
               }}
             >
-              <Bell size={18} />
+              <Bell size={16} />
               {notifications.length > 0 && (
                 <span style={{
                   position: 'absolute',
-                  top: '4px',
-                  right: '4px',
-                  width: '9px',
-                  height: '9px',
+                  top: '6px',
+                  right: '6px',
+                  width: '8px',
+                  height: '8px',
                   borderRadius: '50%',
                   backgroundColor: 'var(--emerald)',
-                  boxShadow: '0 0 8px var(--emerald)',
+                  boxShadow: '0 0 6px var(--emerald)',
                 }} />
               )}
             </button>
@@ -218,21 +289,21 @@ export default function Navbar({
             {showNotifications && (
               <div className="glass-modal animate-slide-down" style={{
                 position: 'absolute',
-                top: '48px',
+                top: '46px',
                 right: 0,
                 width: '320px',
-                padding: '1rem',
+                padding: '0.9rem',
                 zIndex: 200,
               }}>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  marginBottom: '0.75rem',
+                  marginBottom: '0.65rem',
                   borderBottom: '1px solid var(--border-color)',
                   paddingBottom: '0.5rem',
                 }}>
-                  <h4 style={{ fontSize: '0.95rem' }}>Live Queue Alerts</h4>
+                  <h4 style={{ fontSize: '0.875rem' }}>Live Queue Alerts</h4>
                   {notifications.length > 0 && (
                     <button 
                       onClick={clearNotifications}
@@ -241,6 +312,7 @@ export default function Navbar({
                         border: 'none',
                         color: 'var(--accent-primary)',
                         fontSize: '0.75rem',
+                        fontWeight: 600,
                         cursor: 'pointer',
                       }}
                     >
@@ -250,26 +322,28 @@ export default function Navbar({
                 </div>
 
                 {notifications.length === 0 ? (
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem 0' }}>
-                    No new queue notifications yet.
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1.25rem 0' }}>
+                    No new queue notifications.
                   </p>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '250px', overflowY: 'auto' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '240px', overflowY: 'auto' }}>
                     {notifications.map((n, idx) => (
                       <div key={idx} style={{
                         background: 'var(--bg-tertiary)',
-                        padding: '0.6rem 0.75rem',
+                        padding: '0.6rem 0.7rem',
                         borderRadius: '8px',
                         fontSize: '0.8rem',
                         display: 'flex',
                         gap: '0.5rem',
                         alignItems: 'flex-start',
                       }}>
-                        <CheckCircle2 size={16} style={{ color: 'var(--emerald)', marginTop: '2px', flexShrink: 0 }} />
-                        <div>
-                          <p style={{ fontWeight: 600 }}>{n.title}</p>
-                          <p style={{ color: 'var(--text-secondary)' }}>{n.message}</p>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{n.time || 'Just now'}</span>
+                        <CheckCircle2 size={15} style={{ color: 'var(--emerald)', marginTop: '2px', flexShrink: 0 }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--text-primary)' }}>{n.title}</p>
+                          <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '1px' }}>{n.message}</p>
+                          <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>
+                            {n.time || 'Just now'}
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -283,15 +357,20 @@ export default function Navbar({
           <button
             onClick={toggleTheme}
             className="btn-secondary"
-            aria-label="Toggle Dark/Light Mode"
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             style={{
-              width: '38px',
-              height: '38px',
+              width: '36px',
+              height: '36px',
+              minHeight: '36px',
               padding: 0,
-              justifyContent: 'center',
             }}
           >
-            {theme === 'dark' ? <Sun size={18} style={{ color: 'var(--amber)' }} /> : <Moon size={18} style={{ color: 'var(--accent-primary)' }} />}
+            {theme === 'dark' ? (
+              <Sun size={16} style={{ color: 'var(--amber)' }} />
+            ) : (
+              <Moon size={16} style={{ color: 'var(--accent-primary)' }} />
+            )}
           </button>
         </div>
       </div>

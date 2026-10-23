@@ -206,16 +206,38 @@ export function JSShowcaseModal({ isOpen, onClose }) {
   const [selectedTopic, setSelectedTopic] = useState(SYLLABUS_TOPICS[0]);
   const [copied, setCopied] = useState(false);
 
+  // ESC key listener to close modal
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(selectedTopic.code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      navigator.clipboard.writeText(selectedTopic.code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback
+    }
   };
 
   return (
-    <div className="modal-overlay animate-fade-in" onClick={onClose}>
+    <div
+      className="modal-overlay animate-fade-in"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Back End Engineering Syllabus Code Showcase"
+    >
       <div 
         className="glass-modal animate-slide-down"
         style={{
