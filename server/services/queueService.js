@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 import Queue from '../models/Queue.js';
 import Token from '../models/Token.js';
 import Service from '../models/Service.js';
@@ -215,7 +216,10 @@ export async function callNextToken(queueId) {
  * Update token status with valid state transitions & analytics logging
  */
 export async function updateTokenStatus(tokenId, newStatus) {
-  const token = await Token.findById(tokenId).populate('queue business service');
+  const query = mongoose.Types.ObjectId.isValid(tokenId)
+    ? { _id: tokenId }
+    : { tokenNumber: tokenId };
+  const token = await Token.findOne(query).populate('queue business service');
   if (!token) throw new Error('Token not found');
 
   const validTransitions = {
@@ -309,7 +313,10 @@ export async function updateTokenStatus(tokenId, newStatus) {
  * Push back token in queue (e.g. +10 mins delay requested by user)
  */
 export async function pushBackToken(tokenId, minutesDelay = 10) {
-  const token = await Token.findById(tokenId);
+  const query = mongoose.Types.ObjectId.isValid(tokenId)
+    ? { _id: tokenId }
+    : { tokenNumber: tokenId };
+  const token = await Token.findOne(query);
   if (!token) throw new Error('Token not found');
   if (token.status !== 'waiting') throw new Error('Only waiting tokens can be pushed back');
 

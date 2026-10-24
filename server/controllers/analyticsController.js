@@ -12,10 +12,10 @@ export async function getBusinessAnalytics(req, res, next) {
   try {
     const { businessId } = req.query;
 
-    if (!businessId) {
+    if (!businessId || !mongoose.Types.ObjectId.isValid(businessId)) {
       return res.status(400).json({
         success: false,
-        message: 'businessId query parameter is required for analytics',
+        message: 'A valid businessId ObjectId query parameter is required for analytics',
       });
     }
 

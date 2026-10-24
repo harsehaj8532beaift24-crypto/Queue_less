@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Lock, Mail, User, ShieldCheck, Sparkles, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Lock, Mail, User, ShieldCheck, Sparkles, ArrowRight, CheckCircle2, AlertCircle, Phone } from 'lucide-react';
 import { authApi } from '../api/client';
 
 export function AuthModal({ isOpen, onClose, onAuthSuccess }) {
@@ -243,6 +243,32 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                   <option value="staff">Business Staff (Manage queues & verify QR)</option>
                   <option value="admin">Administrator (Full control & Analytics)</option>
                 </select>
+              </div>
+
+              <div>
+                <label htmlFor="authPhoneInput" style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                  Phone Number (Optional)
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <Phone size={16} style={{ position: 'absolute', left: '12px', top: '13px', color: 'var(--text-muted)' }} />
+                  <input
+                    id="authPhoneInput"
+                    type="tel"
+                    placeholder="+1 (555) 000-0000"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.7rem 0.75rem 0.7rem 2.4rem',
+                      background: 'var(--input-bg)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '10px',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.9rem',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
               </div>
             </>
           )}

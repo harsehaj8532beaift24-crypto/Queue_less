@@ -1,5 +1,13 @@
+import mongoose from 'mongoose';
 import Token from '../models/Token.js';
 import { updateTokenStatus, pushBackToken } from '../services/queueService.js';
+
+function findTokenQuery(idOrNumber) {
+  if (mongoose.Types.ObjectId.isValid(idOrNumber)) {
+    return { _id: idOrNumber };
+  }
+  return { tokenNumber: idOrNumber };
+}
 
 /**
  * Get tokens for current authenticated user
@@ -62,7 +70,7 @@ export async function getBusinessTokens(req, res, next) {
  */
 export async function getTokenById(req, res, next) {
   try {
-    const token = await Token.findById(req.params.tokenId)
+    const token = await Token.findOne(findTokenQuery(req.params.tokenId))
       .populate('business')
       .populate('service')
       .populate('queue');
@@ -89,7 +97,7 @@ export async function getTokenById(req, res, next) {
  */
 export async function cancelToken(req, res, next) {
   try {
-    const token = await Token.findById(req.params.tokenId);
+    const token = await Token.findOne(findTokenQuery(req.params.tokenId));
     if (!token) {
       return res.status(404).json({
         success: false,

@@ -156,6 +156,28 @@ export default function App() {
     }
   }, [loadVenuesFromBackend, loadTokensFromBackend]);
 
+  // Handle direct sign-in navigation via URL (e.g. /#login, /login, /signin)
+  useEffect(() => {
+    const checkAuthInUrl = () => {
+      const hash = window.location.hash.toLowerCase();
+      const path = window.location.pathname.toLowerCase();
+      const search = window.location.search.toLowerCase();
+      if (
+        hash.includes('login') ||
+        hash.includes('signin') ||
+        path.includes('login') ||
+        path.includes('signin') ||
+        search.includes('login') ||
+        search.includes('signin')
+      ) {
+        setShowAuthModal(true);
+      }
+    };
+    checkAuthInUrl();
+    window.addEventListener('hashchange', checkAuthInUrl);
+    return () => window.removeEventListener('hashchange', checkAuthInUrl);
+  }, []);
+
   // Real-Time Socket.IO Synchronization
   useEffect(() => {
     let socket;
@@ -742,6 +764,7 @@ export default function App() {
           onClose={() => setBookingModal(null)}
           onConfirmBooking={handleConfirmBooking}
           isSubmitting={isSubmittingBooking}
+          currentUser={currentUser}
         />
       )}
 

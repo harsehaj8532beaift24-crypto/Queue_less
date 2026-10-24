@@ -14,13 +14,20 @@ import {
 } from 'lucide-react';
 import { predictWaitTime } from '../utils/aiPredictor';
 
-export function BookingModal({ venue, department, onClose, onConfirmBooking, isSubmitting = false }) {
-  const [customerName, setCustomerName] = useState('');
-  const [phone, setPhone] = useState('');
+export function BookingModal({ venue, department, onClose, onConfirmBooking, isSubmitting = false, currentUser = null }) {
+  const [customerName, setCustomerName] = useState(currentUser?.name || '');
+  const [phone, setPhone] = useState(currentUser?.phone || '');
   const [partySize, setPartySize] = useState(1);
   const [isPriority, setIsPriority] = useState(false);
   const [priorityReason, setPriorityReason] = useState('Senior Citizen');
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.name && !customerName) setCustomerName(currentUser.name);
+      if (currentUser.phone && !phone) setPhone(currentUser.phone);
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     function handleKeyDown(e) {
