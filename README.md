@@ -304,7 +304,7 @@ QueueLess is developed using modern web technologies with a focus on:
 ## Members
 **Harsehaj**
 **Avni**
-**Anupriya**
+**Harguneet**
 
 ---
 **QueueLess — Join the queue digitally. Save your time.**
