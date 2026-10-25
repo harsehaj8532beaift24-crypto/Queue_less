@@ -66,13 +66,8 @@ export async function bookToken({
 
   // 4. Generate unique cryptographic verification hash & QR payload
   const qrTokenHash = crypto.randomBytes(16).toString('hex');
-  const qrCodeData = JSON.stringify({
-    tokenId: tokenNumber,
-    hash: qrTokenHash,
-    queueId: queue._id.toString(),
-    venue: business.name,
-    customer: customerName,
-  });
+  const clientUrl = process.env.CLIENT_URL || process.env.APP_URL || 'http://localhost:5173';
+  const qrCodeData = `${clientUrl}/verify-token?token=${tokenNumber}&hash=${qrTokenHash}`;
 
   // 5. Persist Token record
   const token = await Token.create({
@@ -87,6 +82,8 @@ export async function bookToken({
     partySize,
     isPriority,
     priorityReason: isPriority ? priorityReason : '',
+    priorityStatus: isPriority ? 'verified' : 'none',
+    priorityApprovedAt: isPriority ? new Date() : null,
     status: 'waiting',
     position: currentWaitingCount + 1,
     peopleAhead: currentWaitingCount,
@@ -185,7 +182,7 @@ export async function callNextToken(queueId) {
   await queue.save();
 
   // Create & emit calling notification
-  const title = '🔔 YOUR TURN NOW!';
+  const title = 'Your Turn Now';
   const message = `Token ${nextToken.tokenNumber} is now called! Please proceed to the service counter immediately.`;
 
   if (nextToken.user) {
@@ -223,9 +220,10 @@ export async function updateTokenStatus(tokenId, newStatus) {
   if (!token) throw new Error('Token not found');
 
   const validTransitions = {
-    waiting: ['calling', 'serving', 'cancelled'],
-    calling: ['serving', 'cancelled', 'completed'],
-    serving: ['completed', 'cancelled'],
+    waiting: ['calling', 'serving', 'cancelled', 'skipped'],
+    calling: ['serving', 'cancelled', 'completed', 'skipped'],
+    serving: ['completed', 'cancelled', 'skipped'],
+    skipped: ['waiting', 'calling', 'cancelled'],
     completed: [],
     cancelled: [],
   };
@@ -239,7 +237,9 @@ export async function updateTokenStatus(tokenId, newStatus) {
   const now = new Date();
   token.status = newStatus;
 
-  if (newStatus === 'serving') {
+  if (newStatus === 'skipped') {
+    token.skippedAt = now;
+  } else if (newStatus === 'serving') {
     token.serviceStartedAt = now;
   } else if (newStatus === 'completed') {
     token.completedAt = now;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Code2, BookOpen, Terminal, Sparkles, CheckCircle2, Play, Database, Server, Shield, Cpu } from 'lucide-react';
+import { X, Code2, BookOpen, Terminal, CheckCircle2, Play, Database, Server, Shield, Cpu, Check } from 'lucide-react';
 
 const SYLLABUS_TOPICS = [
   {
@@ -363,9 +363,10 @@ export function JSShowcaseModal({ isOpen, onClose }) {
               <button
                 onClick={handleCopy}
                 className="btn-secondary"
-                style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
+                style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
               >
-                {copied ? '✓ Copied' : 'Copy Snippet'}
+                {copied ? <Check size={13} style={{ color: 'var(--emerald)' }} /> : null}
+                <span>{copied ? 'Copied' : 'Copy Snippet'}</span>
               </button>
             </div>
 

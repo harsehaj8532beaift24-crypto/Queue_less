@@ -12,6 +12,7 @@ import Token from '../models/Token.js';
 import ServiceHistory from '../models/ServiceHistory.js';
 import { bookToken, callNextToken, updateTokenStatus } from '../services/queueService.js';
 import { calculateWaitTimePrediction } from '../services/predictionService.js';
+import { verifyQR, publicViewToken, executeQueueAction } from '../controllers/qrController.js';
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -130,6 +131,47 @@ async function runTestSuite() {
     // Lookup with fake hash
     const fakeToken = await Token.findOne({ qrTokenHash: 'tampered_fake_qr_hash_xyz' });
     assert(fakeToken === null, 'Counterfeit QR hash is properly rejected');
+
+    // Controller Test: verifyQR endpoint
+    let verifyRes = null;
+    const mockRes = {
+      status: (code) => ({
+        json: (data) => { verifyRes = { code, ...data }; }
+      })
+    };
+    await verifyQR({ body: { qrData: secondToken.tokenNumber } }, mockRes, () => {});
+    assert(Boolean(verifyRes && verifyRes.verified === true), 'verifyQR endpoint validates genuine token');
+    assert(Boolean(verifyRes && verifyRes.data && verifyRes.data.tokenNumber === secondToken.tokenNumber), 'verifyQR returns verified token metadata');
+
+    // Controller Test: publicViewToken endpoint
+    let publicRes = null;
+    const mockPublicRes = {
+      status: (code) => ({
+        json: (data) => { publicRes = { code, ...data }; }
+      })
+    };
+    await publicViewToken({ params: { ref: secondToken.tokenNumber } }, mockPublicRes, () => {});
+    assert(Boolean(publicRes && publicRes.success === true), 'publicViewToken endpoint returns masked public details');
+
+    // Controller Test: executeQueueAction endpoint (Counter Staff Call Action)
+    let actionRes = null;
+    const mockActionRes = {
+      status: (code) => ({
+        json: (data) => { actionRes = { code, ...data }; }
+      })
+    };
+    await executeQueueAction({ body: { tokenId: secondToken._id, action: 'call' } }, mockActionRes, () => {});
+    assert(Boolean(actionRes && actionRes.success === true), 'executeQueueAction transitions token to calling state');
+
+    // Controller Test: Reject counterfeit token
+    let fakeVerifyRes = null;
+    const mockFakeRes = {
+      status: (code) => ({
+        json: (data) => { fakeVerifyRes = { code, ...data }; }
+      })
+    };
+    await verifyQR({ body: { qrData: 'QL-FAKE-999' } }, mockFakeRes, () => {});
+    assert(Boolean(fakeVerifyRes && fakeVerifyRes.code === 404 && fakeVerifyRes.verified === false), 'verifyQR rejects counterfeit token with 404');
 
     // 7. Data-Driven AI Waiting Time Prediction Test
     console.log('\nTest 7: AI Waiting Time Prediction Engine');

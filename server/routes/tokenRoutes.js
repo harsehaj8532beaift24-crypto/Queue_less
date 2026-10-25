@@ -6,8 +6,8 @@ import {
   cancelToken,
   pushBack,
   changeTokenStatus,
-  verifyTokenQR,
 } from '../controllers/tokenController.js';
+import { verifyQR } from '../controllers/qrController.js';
 import { verifyToken, optionalToken, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -18,6 +18,6 @@ router.get('/:tokenId', getTokenById);
 router.patch('/:tokenId/cancel', optionalToken, cancelToken);
 router.patch('/:tokenId/pushback', pushBack);
 router.patch('/:tokenId/status', verifyToken, requireRole('staff', 'admin'), changeTokenStatus);
-router.post('/verify-qr', verifyTokenQR);
+router.post('/verify-qr', optionalToken, verifyQR);
 
 export default router;

@@ -5,9 +5,8 @@ import {
   Clock, 
   Users, 
   BarChart2, 
-  Sparkles, 
   CheckCircle,
-  Zap,
+  Ticket,
   Building2,
   Calendar,
   Layers
@@ -159,17 +158,17 @@ export function VenueModal({ venue, onClose, onBookDepartment }) {
                 className="btn-primary"
                 style={{ fontSize: '0.8rem', height: '34px', minHeight: '34px', padding: '0 0.85rem' }}
               >
-                <Zap size={13} />
-                Book Token
+                <Ticket size={13} />
+                <span>Book Token</span>
               </button>
             </div>
           ))}
         </div>
 
-        {/* AI Traffic Load Breakdown */}
+        {/* Hourly Traffic Breakdown */}
         <h3 style={{ fontSize: '0.98rem', marginBottom: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <BarChart2 size={16} style={{ color: 'var(--emerald)' }} />
-          AI Traffic Forecast (Today)
+          Hourly Customer Traffic (Today)
         </h3>
 
         <div style={{
@@ -191,7 +190,7 @@ export function VenueModal({ venue, onClose, onBookDepartment }) {
                   style={{
                     width: '100%',
                     height: `${Math.max(8, Math.round((item.count / 80) * 100))}%`,
-                    background: item.isPeak ? 'var(--rose)' : 'var(--accent-primary)',
+                    background: item.isPeak ? 'var(--rose)' : 'var(--text-primary)',
                     borderRadius: '3px 3px 0 0',
                     transition: 'height 0.3s ease',
                   }}
@@ -206,7 +205,7 @@ export function VenueModal({ venue, onClose, onBookDepartment }) {
               <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--rose)' }} /> Peak Hours
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--accent-primary)' }} /> Normal Traffic
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--text-primary)' }} /> Normal Traffic
             </span>
           </div>
         </div>

@@ -4,8 +4,7 @@ import {
   MapPin, 
   Clock, 
   Users, 
-  Sparkles, 
-  Zap,
+  Ticket,
   Building2,
   Activity,
   Scissors,
@@ -179,22 +178,22 @@ export function VenueCard({ venue, onSelectVenue, onQuickBook }) {
           </div>
         </div>
 
-        {/* AI Insight Pill */}
+        {/* Queue Status Notice */}
         <div style={{
-          background: 'var(--accent-subtle)',
-          border: '1px solid rgba(99, 102, 241, 0.2)',
+          background: 'var(--bg-tertiary)',
+          border: '1px solid var(--border-color)',
           padding: '0.45rem 0.7rem',
-          borderRadius: '8px',
+          borderRadius: '6px',
           display: 'flex',
           alignItems: 'center',
           gap: '0.45rem',
           fontSize: '0.75rem',
-          color: 'var(--accent-primary)',
+          color: 'var(--text-secondary)',
           lineHeight: 1.35,
         }}>
-          <Sparkles size={14} style={{ flexShrink: 0 }} />
+          <Clock size={13} style={{ flexShrink: 0, color: 'var(--text-secondary)' }} />
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {venue.aiTip || 'Optimal queue conditions active today.'}
+            {venue.aiTip || `Current queue wait time: ~${totalWaitEstimate} mins.`}
           </span>
         </div>
 
@@ -215,8 +214,8 @@ export function VenueCard({ venue, onSelectVenue, onQuickBook }) {
             className="btn-primary" 
             style={{ flex: 1, fontSize: '0.825rem', height: '36px', minHeight: '36px', padding: '0 0.5rem' }}
           >
-            <Zap size={14} />
-            Join Queue
+            <Ticket size={14} />
+            <span>Join Queue</span>
           </button>
         </div>
 

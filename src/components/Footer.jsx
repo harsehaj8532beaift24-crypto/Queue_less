@@ -1,7 +1,7 @@
 import React from 'react';
-import { Ticket, Sparkles, Shield, Heart } from 'lucide-react';
+import { Ticket, Code2, HelpCircle, Mail, ShieldCheck } from 'lucide-react';
 
-export function Footer({ openJsShowcase }) {
+export function Footer({ openJsShowcase, onOpenInfo }) {
   return (
     <footer style={{
       borderTop: '1px solid var(--border-color)',
@@ -12,7 +12,7 @@ export function Footer({ openJsShowcase }) {
       <div className="app-container">
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
           gap: '2rem',
           marginBottom: '2.5rem',
         }}>
@@ -22,54 +22,88 @@ export function Footer({ openJsShowcase }) {
               <div style={{
                 width: '36px',
                 height: '36px',
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)',
+                borderRadius: '8px',
+                background: 'var(--btn-primary-bg, #262626)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#fff',
+                color: '#ffffff',
               }}>
                 <Ticket size={20} />
               </div>
-              <span style={{ fontSize: '1.25rem', fontWeight: 800 }} className="gradient-text">
+              <span style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                 QueueLess
               </span>
             </div>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-              Smart Virtual Queue Management System. Eliminating waiting lines in hospitals, banks, salons, government offices, and cafeterias.
+              Smart Virtual Queue Management System. Eliminating physical waiting lines across hospitals, banking branches, salons, government offices, and cafeterias.
             </p>
           </div>
 
-          {/* Quick Features */}
+          {/* Core System Features */}
           <div>
-            <h4 style={{ fontSize: '0.95rem', marginBottom: '0.85rem' }}>Features</h4>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.85rem' }}>System Features</h4>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              <li>• Remote Token Booking</li>
-              <li>• Live QR Ticket Check-in</li>
-              <li>• AI Waiting Time Predictor</li>
-              <li>• Real-time Notification Engine</li>
-              <li>• Business Analytics Dashboard</li>
+              <li>Remote Virtual Token Booking</li>
+              <li>Encrypted QR Code Ticket Pass</li>
+              <li>Dynamic Wait Time Estimation</li>
+              <li>Real-time Queue Notifications</li>
+              <li>Business Counter Controls & Analytics</li>
             </ul>
           </div>
 
-          {/* Tech Stack & Syllabus */}
+          {/* Help & Support Links */}
           <div>
-            <h4 style={{ fontSize: '0.95rem', marginBottom: '0.85rem' }}>Tech Stack & Syllabus</h4>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.85rem' }}>Help & Legal</h4>
+            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onOpenInfo && onOpenInfo('faq')}
+                  style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }}
+                >
+                  Frequently Asked Questions
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onOpenInfo && onOpenInfo('contact')}
+                  style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }}
+                >
+                  Contact Customer Support
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onOpenInfo && onOpenInfo('terms')}
+                  style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }}
+                >
+                  Privacy & Usage Policies
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          {/* Technical Architecture */}
+          <div>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.85rem' }}>Architecture</h4>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-              <span className="badge badge-indigo">React SPA</span>
+              <span className="badge badge-charcoal">React 18</span>
               <span className="badge badge-emerald">Vite</span>
-              <span className="badge badge-amber">JavaScript ES6+</span>
-              <span className="badge badge-indigo">HTML5 & CSS3</span>
-              <span className="badge badge-emerald">LocalStorage</span>
-              <span className="badge badge-amber">QRCode Generator</span>
+              <span className="badge badge-charcoal">Node.js Express</span>
+              <span className="badge badge-charcoal">MongoDB</span>
+              <span className="badge badge-emerald">Socket.IO</span>
+              <span className="badge badge-charcoal">QR Engine</span>
             </div>
             <button 
               onClick={openJsShowcase}
               className="btn-secondary" 
               style={{ marginTop: '0.85rem', fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
             >
-              <Sparkles size={14} style={{ color: 'var(--amber)' }} />
-              Open Syllabus Code Showcase
+              <Code2 size={14} />
+              <span>Syllabus Code Showcase</span>
             </button>
           </div>
         </div>
@@ -86,9 +120,9 @@ export function Footer({ openJsShowcase }) {
           fontSize: '0.8rem',
           color: 'var(--text-muted)',
         }}>
-          <p>© {new Date().getFullYear()} QueueLess - Virtual Token & Queue Management System. All rights reserved.</p>
-          <p style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            Built with <Heart size={14} style={{ color: 'var(--rose)' }} fill="var(--rose)" /> using Modern JavaScript & React
+          <p>© {new Date().getFullYear()} QueueLess — Smart Virtual Queue Management System. All rights reserved.</p>
+          <p style={{ color: 'var(--text-secondary)' }}>
+            Professional Queue Optimization & Real-Time Booking
           </p>
         </div>
       </div>

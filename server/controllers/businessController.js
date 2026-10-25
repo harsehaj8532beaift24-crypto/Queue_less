@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Business from '../models/Business.js';
 import Service from '../models/Service.js';
 import Queue from '../models/Queue.js';
@@ -103,6 +104,12 @@ export async function getAllBusinesses(req, res, next) {
  */
 export async function getBusinessById(req, res, next) {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Business not found',
+      });
+    }
     const business = await Business.findById(req.params.id);
     if (!business) {
       return res.status(404).json({
@@ -153,6 +160,12 @@ export async function createBusiness(req, res, next) {
  */
 export async function updateBusiness(req, res, next) {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Business not found',
+      });
+    }
     const business = await Business.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,

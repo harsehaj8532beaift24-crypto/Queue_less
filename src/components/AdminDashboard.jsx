@@ -8,7 +8,6 @@ import {
   Plus, 
   Play, 
   AlertOctagon, 
-  Sparkles, 
   UserCheck, 
   PhoneCall, 
   Activity,
@@ -18,10 +17,12 @@ import {
   ShieldCheck,
   AlertCircle,
   BarChart2,
-  RefreshCw
+  RefreshCw,
+  X
 } from 'lucide-react';
 import { calculateBusinessMetrics } from '../utils/aiPredictor';
 import { analyticsApi, tokenApi } from '../api/client';
+import QRScannerView from './QRScannerView';
 
 export function AdminDashboard({ venues, tokens, onUpdateVenue, onUpdateTokenStatus, onAddWalkInToken }) {
   const [selectedVenueId, setSelectedVenueId] = useState(venues[0]?.id || venues[0]?._id || 'v1');
@@ -764,9 +765,7 @@ export function AdminDashboard({ venues, tokens, onUpdateVenue, onUpdateTokenSta
                         maxWidth: '24px',
                         height: `${barHeight}px`,
                         borderRadius: '4px',
-                        background: slot.isPeak
-                          ? 'linear-gradient(to top, var(--rose), #fb7185)'
-                          : 'linear-gradient(to top, var(--accent-primary), #818cf8)',
+                        background: slot.isPeak ? 'var(--rose)' : 'var(--text-primary)',
                         transition: 'height 0.3s ease',
                       }} />
                       <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '6px' }}>
@@ -783,127 +782,15 @@ export function AdminDashboard({ venues, tokens, onUpdateVenue, onUpdateTokenSta
 
       {/* TAB 3: QR CODE VERIFICATION TOOL */}
       {subTab === 'qr' && (
-        <div className="glass-panel" style={{
-          padding: '2rem',
-          maxWidth: '640px',
-          margin: '0 auto',
-          width: '100%',
-        }}>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <span className="badge badge-indigo" style={{ marginBottom: '0.3rem' }}>
-              <ShieldCheck size={12} /> Staff Desk QR Verifier
-            </span>
-            <h3 style={{ fontSize: '1.4rem', fontWeight: 800, marginTop: '0.2rem' }}>
-              Token Authenticity Verification
-            </h3>
-            <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: 1.5 }}>
-              Scan the customer's QR code or type their token number to verify registration in MongoDB and prevent queue jumping.
-            </p>
-          </div>
-
-          <form onSubmit={handleVerifyQR} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div>
-              <label htmlFor="qrPayloadInput" style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '0.4rem' }}>
-                Scanned QR Payload or Token ID:
-              </label>
-              <textarea
-                id="qrPayloadInput"
-                rows={3}
-                placeholder='e.g. QL-OPD-101 or paste JSON payload'
-                value={qrInput}
-                onChange={(e) => setQrInput(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.85rem',
-                  borderRadius: '10px',
-                  border: '1px solid var(--border-color)',
-                  background: 'var(--input-bg)',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.86rem',
-                  fontFamily: 'monospace',
-                  outline: 'none',
-                  resize: 'vertical',
-                }}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isVerifying || !qrInput.trim()}
-              className="btn-primary"
-              style={{ justifyContent: 'center', padding: '0.8rem', fontSize: '0.9rem' }}
-            >
-              <Search size={18} />
-              <span>{isVerifying ? 'Verifying with MongoDB...' : 'Verify Token Record'}</span>
-            </button>
-          </form>
-
-          {verifyError && (
-            <div style={{
-              marginTop: '1.25rem',
-              background: 'rgba(244, 63, 94, 0.1)',
-              border: '1px solid var(--rose)',
-              color: 'var(--rose)',
-              padding: '0.9rem 1rem',
-              borderRadius: '12px',
-              fontSize: '0.85rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.65rem',
-            }}>
-              <AlertCircle size={18} style={{ flexShrink: 0 }} />
-              <span>{verifyError}</span>
-            </div>
-          )}
-
-          {verificationResult && (
-            <div className="animate-slide-down" style={{
-              marginTop: '1.5rem',
-              padding: '1.25rem',
-              borderRadius: '14px',
-              background: verificationResult.isEligible ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-              border: verificationResult.isEligible ? '2px solid var(--emerald)' : '2px solid var(--amber)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.85rem' }}>
-                <CheckCircle2 size={22} style={{ color: verificationResult.isEligible ? 'var(--emerald)' : 'var(--amber)' }} />
-                <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: verificationResult.isEligible ? 'var(--emerald)' : 'var(--amber)' }}>
-                  {verificationResult.message}
-                </h4>
-              </div>
-
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                gap: '0.85rem',
-                fontSize: '0.85rem',
-                background: 'var(--bg-secondary)',
-                padding: '1rem',
-                borderRadius: '10px',
-              }}>
-                <div>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Token Number:</span>
-                  <p style={{ fontWeight: 800, fontSize: '1.2rem', fontFamily: 'monospace', color: 'var(--accent-primary)', marginTop: '2px' }}>
-                    {verificationResult.data.tokenNumber}
-                  </p>
-                </div>
-                <div>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Customer Name:</span>
-                  <p style={{ fontWeight: 600, marginTop: '2px' }}>{verificationResult.data.customerName}</p>
-                </div>
-                <div>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Department:</span>
-                  <p style={{ marginTop: '2px' }}>{verificationResult.data.departmentName}</p>
-                </div>
-                <div>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Current Status:</span>
-                  <div style={{ marginTop: '4px' }}>
-                    <span className="badge badge-indigo">{verificationResult.data.status?.toUpperCase()}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        <QRScannerView
+          venue={currentVenue}
+          onTokenAction={(tokenId, action) => {
+            if (action === 'call') onUpdateTokenStatus(tokenId, 'calling');
+            else if (action === 'serve') onUpdateTokenStatus(tokenId, 'serving');
+            else if (action === 'complete') onUpdateTokenStatus(tokenId, 'completed');
+            else if (action === 'skip' || action === 'cancel') onUpdateTokenStatus(tokenId, 'cancelled');
+          }}
+        />
       )}
 
       {/* Add Walk-in Modal */}
@@ -939,7 +826,7 @@ export function AdminDashboard({ venues, tokens, onUpdateVenue, onUpdateTokenSta
                 }}
                 aria-label="Close walk-in modal"
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
 

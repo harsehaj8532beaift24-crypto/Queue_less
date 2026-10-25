@@ -11,6 +11,7 @@ import {
   XCircle, 
   RotateCcw,
   Download,
+  Printer,
   AlertTriangle,
   ChevronRight,
   ShieldAlert,
@@ -29,14 +30,13 @@ export function TokenCard({ token, onCancelToken, onPushBackToken, onSimulateSte
   const peopleAheadCount = token.peopleAhead ?? 0;
   const positionIndex = token.position ?? (peopleAheadCount + 1);
 
-  // Render QR Code onto Canvas
+  // Render QR Code onto Canvas linking directly to public verification URL
   useEffect(() => {
     if (canvasRef.current) {
-      const payload = token.qrCodeData || JSON.stringify({
-        token: displayTokenNumber,
-        hash: token.qrTokenHash || 'dev_token',
-        venue: venueTitle,
-      });
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
+      const payload = (token.qrCodeData && token.qrCodeData.startsWith('http'))
+        ? token.qrCodeData
+        : `${origin}/verify-token?token=${encodeURIComponent(displayTokenNumber)}&hash=${encodeURIComponent(token.qrTokenHash || 'dev_hash')}`;
 
       QRCode.toCanvas(
         canvasRef.current,
@@ -45,7 +45,7 @@ export function TokenCard({ token, onCancelToken, onPushBackToken, onSimulateSte
           width: 140,
           margin: 1,
           color: {
-            dark: '#0f172a',
+            dark: '#262626',
             light: '#ffffff',
           },
         },
@@ -55,6 +55,16 @@ export function TokenCard({ token, onCancelToken, onPushBackToken, onSimulateSte
       );
     }
   }, [token.qrCodeData, token.qrTokenHash, displayTokenNumber, venueTitle]);
+
+  const handleDownloadQR = () => {
+    if (canvasRef.current) {
+      const url = canvasRef.current.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `QueueLess-Pass-${displayTokenNumber}.png`;
+      a.click();
+    }
+  };
 
   // Trigger celebration confetti when token state becomes SERVING or CALLING
   useEffect(() => {
@@ -137,8 +147,8 @@ export function TokenCard({ token, onCancelToken, onPushBackToken, onSimulateSte
           style={{ fontSize: '0.78rem', padding: '0.3rem 0.75rem', fontWeight: 700 }}
         >
           {isWaiting && `Waiting (#${positionIndex})`}
-          {isCalling && `🔔 YOUR TURN NOW!`}
-          {isServing && `In Service at Desk`}
+          {isCalling && `Now Calling`}
+          {isServing && `In Service`}
           {isCompleted && `Completed`}
           {isCancelled && `Cancelled`}
         </span>
@@ -146,13 +156,9 @@ export function TokenCard({ token, onCancelToken, onPushBackToken, onSimulateSte
 
       {/* Main Token Display Box */}
       <div style={{
-        background: isCalling 
-          ? 'linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(245, 158, 11, 0.1) 100%)'
-          : isServing
-          ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(59, 130, 246, 0.1) 100%)'
-          : 'var(--bg-tertiary)',
+        background: 'var(--bg-tertiary)',
         border: '1px solid var(--border-color)',
-        borderRadius: '16px',
+        borderRadius: '8px',
         padding: '1.25rem 1rem',
         textAlign: 'center',
         position: 'relative',
@@ -298,28 +304,28 @@ export function TokenCard({ token, onCancelToken, onPushBackToken, onSimulateSte
         </div>
       </div>
 
-      {/* AI Smart Notification Tip */}
+      {/* Notification Status Tip */}
       <div style={{
-        background: 'rgba(99, 102, 241, 0.08)',
-        border: '1px solid rgba(99, 102, 241, 0.25)',
-        borderRadius: '12px',
-        padding: '0.85rem',
+        background: 'var(--bg-tertiary)',
+        border: '1px solid var(--border-color)',
+        borderRadius: '6px',
+        padding: '0.75rem',
         display: 'flex',
         alignItems: 'center',
         gap: '0.6rem',
         fontSize: '0.8rem',
-        color: 'var(--accent-primary)',
+        color: 'var(--text-primary)',
         lineHeight: 1.45,
       }}>
-        <Sparkles size={18} style={{ flexShrink: 0 }} />
+        <Clock size={16} style={{ flexShrink: 0, color: 'var(--text-secondary)' }} />
         <span>
           {isCalling
-            ? '🔔 YOUR TURN! Please proceed to the service counter immediately.'
+            ? 'Your turn has arrived. Please proceed to the service counter.'
             : isServing
-            ? '✅ Currently in service at the counter desk.'
+            ? 'Currently being served at the counter.'
             : peopleAheadCount <= 1 
-            ? '🔔 Your turn is almost here! Please stay close to the counter.' 
-            : `AI Prediction: Head towards lobby in ~${Math.max(1, waitMins - 5)} mins for smooth entry.`}
+            ? 'Your turn is approaching. Please remain nearby.' 
+            : `Estimated arrival: Please arrive at the venue in approximately ${Math.max(1, waitMins - 5)} minutes.`}
         </span>
       </div>
 
@@ -375,11 +381,23 @@ export function TokenCard({ token, onCancelToken, onPushBackToken, onSimulateSte
 
           <button 
             type="button"
+            onClick={handleDownloadQR}
+            className="btn-secondary" 
+            style={{ flex: '1 1 110px', justifyContent: 'center', fontSize: '0.8rem', padding: '0.6rem 0.75rem' }}
+            title="Download QR code image for offline scanning"
+          >
+            <Download size={14} />
+            <span>Download QR</span>
+          </button>
+
+          <button 
+            type="button"
             onClick={handlePrintTicket}
             className="btn-secondary" 
             style={{ flex: '1 1 100px', justifyContent: 'center', fontSize: '0.8rem', padding: '0.6rem 0.75rem' }}
+            title="Print printable ticket pass"
           >
-            <Download size={14} />
+            <Printer size={14} />
             <span>Print Ticket</span>
           </button>
         </div>

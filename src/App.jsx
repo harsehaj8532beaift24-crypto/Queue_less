@@ -7,6 +7,8 @@ import { TokenCard } from './components/TokenCard';
 import { AdminDashboard } from './components/AdminDashboard';
 import { JSShowcaseModal } from './components/JSShowcaseModal';
 import { AuthModal } from './components/AuthModal';
+import { InfoModal } from './components/InfoModal';
+import { TokenVerificationView } from './components/TokenVerificationView';
 import { Footer } from './components/Footer';
 
 import { CATEGORIES, INITIAL_VENUES } from './data/initialData';
@@ -58,6 +60,8 @@ export default function App() {
   const [bookingModal, setBookingModal] = useState(null);
   const [showJsShowcase, setShowJsShowcase] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [infoModalTab, setInfoModalTab] = useState(null); // 'faq', 'contact', 'terms'
+  const [verificationRef, setVerificationRef] = useState(null); // QR pass reference (token number or hash)
   const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
   
   // Auth state
@@ -156,26 +160,51 @@ export default function App() {
     }
   }, [loadVenuesFromBackend, loadTokensFromBackend]);
 
-  // Handle direct sign-in navigation via URL (e.g. /#login, /login, /signin)
+  // Handle direct sign-in and QR verification navigation via URL
   useEffect(() => {
-    const checkAuthInUrl = () => {
-      const hash = window.location.hash.toLowerCase();
-      const path = window.location.pathname.toLowerCase();
-      const search = window.location.search.toLowerCase();
+    const handleUrlRoute = () => {
+      const hash = window.location.hash || '';
+      const path = window.location.pathname || '';
+      const search = window.location.search || '';
+      const params = new URLSearchParams(search);
+
+      // 1. QR Pass Verification (from mobile camera scan or direct link)
+      const qrToken = params.get('token');
+      const qrHash = params.get('hash');
+      const qrVerify = params.get('verify') || params.get('ref');
+
+      if (qrHash || qrToken || qrVerify) {
+        setVerificationRef(qrHash || qrToken || qrVerify);
+      } else if (path.includes('/verify-token') || path.includes('/verify')) {
+        const parts = path.split('/').filter(Boolean);
+        if (parts.length > 1 && (parts[0] === 'verify' || parts[0] === 'verify-token')) {
+          setVerificationRef(parts[1]);
+        }
+      }
+
+      // 2. Direct Auth Modal navigation
+      const lowerHash = hash.toLowerCase();
+      const lowerPath = path.toLowerCase();
+      const lowerSearch = search.toLowerCase();
       if (
-        hash.includes('login') ||
-        hash.includes('signin') ||
-        path.includes('login') ||
-        path.includes('signin') ||
-        search.includes('login') ||
-        search.includes('signin')
+        lowerHash.includes('login') ||
+        lowerHash.includes('signin') ||
+        lowerPath.includes('login') ||
+        lowerPath.includes('signin') ||
+        lowerSearch.includes('login') ||
+        lowerSearch.includes('signin')
       ) {
         setShowAuthModal(true);
       }
     };
-    checkAuthInUrl();
-    window.addEventListener('hashchange', checkAuthInUrl);
-    return () => window.removeEventListener('hashchange', checkAuthInUrl);
+
+    handleUrlRoute();
+    window.addEventListener('hashchange', handleUrlRoute);
+    window.addEventListener('popstate', handleUrlRoute);
+    return () => {
+      window.removeEventListener('hashchange', handleUrlRoute);
+      window.removeEventListener('popstate', handleUrlRoute);
+    };
   }, []);
 
   // Real-Time Socket.IO Synchronization
@@ -363,7 +392,7 @@ export default function App() {
         const newAhead = (t.peopleAhead || 1) - 1;
         const newStatus = newAhead === 0 ? 'calling' : 'waiting';
         if (newAhead === 0) {
-          addNotification('🔔 YOUR TURN NOW!', `Token ${t.tokenNumber || t.tokenId} is called to the service counter!`);
+          addNotification('Your Turn Now', `Token ${t.tokenNumber || t.tokenId} is called to the service counter.`);
         }
         return {
           ...t,
@@ -440,13 +469,26 @@ export default function App() {
         onLogout={handleLogout}
         isServerConnected={isServerConnected}
         openJsShowcase={() => setShowJsShowcase(true)}
+        onOpenInfo={(tab) => setInfoModalTab(tab || 'faq')}
       />
 
       {/* Main Body */}
       <main style={{ flexGrow: 1, padding: '2rem 0' }}>
         <div className="app-container">
 
-          {/* TAB 1: EXPLORE VENUES & BOOK QUEUE */}
+          {verificationRef ? (
+            <TokenVerificationView
+              tokenRef={verificationRef}
+              onBack={() => {
+                setVerificationRef(null);
+                try {
+                  window.history.pushState({}, '', window.location.pathname.startsWith('/verify') ? '/' : window.location.pathname);
+                } catch {}
+              }}
+            />
+          ) : (
+            <>
+              {/* TAB 1: EXPLORE VENUES & BOOK QUEUE */}
           {activeTab === 'explore' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
               
@@ -458,15 +500,15 @@ export default function App() {
                   padding: '2.5rem 2rem',
                   position: 'relative',
                   overflow: 'hidden',
-                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(6, 182, 212, 0.08) 100%)',
-                  borderRadius: '20px',
+                  background: 'var(--bg-secondary)',
+                  borderRadius: '12px',
                   border: '1px solid var(--border-color)',
                 }}
               >
                 <div style={{ maxWidth: '680px', position: 'relative', zIndex: 2 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
-                    <span className="badge badge-indigo" style={{ letterSpacing: '0.04em' }}>
-                      <Sparkles size={13} /> SMART QUEUE MANAGEMENT
+                    <span className="badge badge-charcoal" style={{ letterSpacing: '0.04em' }}>
+                      VIRTUAL QUEUE SYSTEM
                     </span>
                     <span className="badge badge-emerald">
                       REAL-TIME SYNC
@@ -481,7 +523,7 @@ export default function App() {
                     letterSpacing: '-0.02em',
                   }}>
                     Skip Physical Lines. <br />
-                    <span className="gradient-text">Queue Remotely From Anywhere.</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Queue Remotely From Anywhere.</span>
                   </h1>
 
                   <p style={{
@@ -491,7 +533,7 @@ export default function App() {
                     lineHeight: 1.6,
                     maxWidth: '580px',
                   }}>
-                    Book digital queue tokens for Hospitals, Banks, Salons, Government Offices & Cafeterias. Get instant AI wait time estimates, encrypted QR check-ins, and turn alerts straight to your device.
+                    Book digital queue tokens for hospitals, banks, salons, government offices, and clinics. Receive live queue position updates, verified QR passes, and arrival alerts directly on your device.
                   </p>
 
                   {/* Search Bar Input */}
@@ -745,6 +787,9 @@ export default function App() {
             />
           )}
 
+            </>
+          )}
+
         </div>
       </main>
 
@@ -783,8 +828,18 @@ export default function App() {
         />
       )}
 
+      {infoModalTab && (
+        <InfoModal
+          initialTab={infoModalTab}
+          onClose={() => setInfoModalTab(null)}
+        />
+      )}
+
       {/* Footer */}
-      <Footer openJsShowcase={() => setShowJsShowcase(true)} />
+      <Footer 
+        openJsShowcase={() => setShowJsShowcase(true)} 
+        onOpenInfo={(tab) => setInfoModalTab(tab || 'faq')} 
+      />
 
     </div>
   );

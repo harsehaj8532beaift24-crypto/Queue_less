@@ -46,7 +46,28 @@ export const authApi = {
       method: 'POST',
       body: JSON.stringify(userData),
     }),
+  logout: () => request('/auth/logout', { method: 'POST' }),
   getMe: () => request('/auth/me'),
+  updateProfile: (userData) =>
+    request('/auth/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(userData),
+    }),
+  changePassword: (passwordData) =>
+    request('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify(passwordData),
+    }),
+  forgotPassword: (email) =>
+    request('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+  resetPassword: (token, newPassword) =>
+    request('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    }),
   getDemoAccounts: () => request('/auth/demo-accounts'),
 };
 
@@ -106,9 +127,24 @@ export const tokenApi = {
       body: JSON.stringify({ status }),
     }),
   verifyQR: (payload) =>
-    request('/tokens/verify-qr', {
+    request('/qr/verify', {
       method: 'POST',
       body: JSON.stringify(payload),
+    }),
+};
+
+// QR Verification & Queue Action API
+export const qrApi = {
+  verify: (payload) =>
+    request('/qr/verify', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  viewPublic: (ref) => request(`/qr/view/${encodeURIComponent(ref)}`),
+  executeAction: (tokenId, action, businessId) =>
+    request('/qr/action', {
+      method: 'POST',
+      body: JSON.stringify({ tokenId, action, businessId }),
     }),
 };
 

@@ -61,9 +61,19 @@ const tokenSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['waiting', 'calling', 'serving', 'completed', 'cancelled'],
+      enum: ['waiting', 'calling', 'serving', 'completed', 'cancelled', 'skipped'],
       default: 'waiting',
       index: true,
+    },
+    priorityStatus: {
+      type: String,
+      enum: ['none', 'verified', 'pending', 'rejected', 'expired'],
+      default: 'none',
+      index: true,
+    },
+    priorityApprovedAt: {
+      type: Date,
+      default: null,
     },
     position: {
       type: Number,
@@ -108,6 +118,10 @@ const tokenSchema = new mongoose.Schema(
       default: null,
     },
     cancelledAt: {
+      type: Date,
+      default: null,
+    },
+    skippedAt: {
       type: Date,
       default: null,
     },

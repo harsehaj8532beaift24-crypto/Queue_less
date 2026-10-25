@@ -14,6 +14,7 @@ import businessRoutes from './routes/businessRoutes.js';
 import serviceRoutes from './routes/serviceRoutes.js';
 import queueRoutes from './routes/queueRoutes.js';
 import tokenRoutes from './routes/tokenRoutes.js';
+import qrRoutes from './routes/qrRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 
@@ -58,6 +59,7 @@ app.use('/api/businesses', businessRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/queues', queueRoutes);
 app.use('/api/tokens', tokenRoutes);
+app.use('/api/qr', qrRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/notifications', notificationRoutes);
 

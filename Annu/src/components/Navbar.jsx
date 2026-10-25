@@ -11,7 +11,8 @@ import {
   LogOut,
   LogIn,
   Activity,
-  Code2
+  Code2,
+  HelpCircle
 } from 'lucide-react';
 
 export default function Navbar({ 
@@ -26,7 +27,8 @@ export default function Navbar({
   onOpenAuth,
   onLogout,
   isServerConnected,
-  openJsShowcase
+  openJsShowcase,
+  onOpenInfo
 }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef(null);
@@ -76,22 +78,21 @@ export default function Navbar({
           }}
         >
           <div style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)',
+            width: '36px',
+            height: '36px',
+            borderRadius: '8px',
+            background: 'var(--btn-primary-bg, #262626)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#fff',
-            boxShadow: '0 2px 10px var(--accent-glow)',
+            color: '#ffffff',
             flexShrink: 0,
           }}>
-            <Ticket size={22} />
+            <Ticket size={20} />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em' }} className="gradient-text">
+              <span style={{ fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
                 QueueLess
               </span>
               <span 
@@ -99,11 +100,11 @@ export default function Navbar({
                 style={{ fontSize: '0.65rem', padding: '0.1rem 0.45rem' }}
                 title={isServerConnected ? 'Connected to MongoDB & Socket.IO server' : 'Connecting to local/remote server'}
               >
-                {isServerConnected ? '● LIVE DB' : '○ CONNECTING'}
+                {isServerConnected ? 'Connected' : 'Connecting'}
               </span>
             </div>
-            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '-2px' }}>
-              Smart Virtual Queue Management
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '-1px' }}>
+              Virtual Queue Management System
             </p>
           </div>
         </div>
@@ -117,7 +118,7 @@ export default function Navbar({
             gap: '0.4rem', 
             background: 'var(--bg-secondary)', 
             padding: '3px', 
-            borderRadius: '12px',
+            borderRadius: '8px',
             border: '1px solid var(--border-color)',
             flexWrap: 'wrap',
           }}
@@ -129,7 +130,7 @@ export default function Navbar({
               height: '34px',
               fontSize: '0.825rem', 
               padding: '0 0.9rem',
-              borderRadius: '9px',
+              borderRadius: '6px',
               border: activeTab === 'explore' ? undefined : 'none',
               background: activeTab === 'explore' ? undefined : 'transparent',
               boxShadow: activeTab === 'explore' ? undefined : 'none',
@@ -146,7 +147,7 @@ export default function Navbar({
               height: '34px',
               fontSize: '0.825rem', 
               padding: '0 0.9rem',
-              borderRadius: '9px',
+              borderRadius: '6px',
               border: activeTab === 'tokens' ? undefined : 'none',
               background: activeTab === 'tokens' ? undefined : 'transparent',
               boxShadow: activeTab === 'tokens' ? undefined : 'none',
@@ -182,7 +183,7 @@ export default function Navbar({
               height: '34px',
               fontSize: '0.825rem', 
               padding: '0 0.9rem',
-              borderRadius: '9px',
+              borderRadius: '6px',
               border: activeTab === 'admin' ? undefined : 'none',
               background: activeTab === 'admin' ? undefined : 'transparent',
               boxShadow: activeTab === 'admin' ? undefined : 'none',
@@ -200,15 +201,34 @@ export default function Navbar({
               height: '34px',
               fontSize: '0.825rem', 
               padding: '0 0.85rem',
-              borderRadius: '9px',
+              borderRadius: '6px',
               border: 'none',
               background: 'transparent',
               boxShadow: 'none',
-              color: 'var(--accent-primary)',
+              color: 'var(--text-secondary)',
             }}
           >
             <Code2 size={16} />
             <span>Syllabus Guide</span>
+          </button>
+
+          <button
+            onClick={() => onOpenInfo && onOpenInfo('faq')}
+            className="btn-secondary"
+            title="Help, FAQ and Policies"
+            style={{ 
+              height: '34px',
+              fontSize: '0.825rem', 
+              padding: '0 0.85rem',
+              borderRadius: '6px',
+              border: 'none',
+              background: 'transparent',
+              boxShadow: 'none',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            <HelpCircle size={15} />
+            <span>Help & FAQ</span>
           </button>
         </nav>
 

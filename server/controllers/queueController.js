@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Queue from '../models/Queue.js';
 import Token from '../models/Token.js';
 import { bookToken, callNextToken, reindexQueuePositions } from '../services/queueService.js';
@@ -32,6 +33,12 @@ export async function getQueues(req, res, next) {
  */
 export async function getQueueStatus(req, res, next) {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.queueId)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Queue not found',
+      });
+    }
     const queue = await Queue.findById(req.params.queueId)
       .populate('business')
       .populate('service')
@@ -75,6 +82,12 @@ export async function getQueueStatus(req, res, next) {
 export async function joinQueue(req, res, next) {
   try {
     const { queueId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(queueId)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Queue not found',
+      });
+    }
     const {
       customerName,
       phone,
@@ -118,6 +131,12 @@ export async function joinQueue(req, res, next) {
  */
 export async function callNext(req, res, next) {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.queueId)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Queue not found',
+      });
+    }
     const token = await callNextToken(req.params.queueId);
     res.status(200).json({
       success: true,
@@ -135,6 +154,12 @@ export async function callNext(req, res, next) {
  */
 export async function updateQueueCounters(req, res, next) {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.queueId)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Queue not found',
+      });
+    }
     const { activeCounters, status } = req.body;
     const updates = {};
 

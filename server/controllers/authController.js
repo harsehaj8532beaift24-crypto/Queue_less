@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
@@ -164,3 +165,151 @@ export async function getDemoAccounts(req, res) {
     ],
   });
 }
+
+/**
+ * Request password reset token
+ * POST /api/auth/forgot-password
+ */
+export async function forgotPassword(req, res, next) {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email address is required' });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message: 'If an account exists with this email, a reset token has been issued.',
+      });
+    }
+
+    const rawToken = crypto.randomBytes(20).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+    user.resetPasswordToken = tokenHash;
+    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset token generated successfully.',
+      resetToken: rawToken,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Reset password using token
+ * POST /api/auth/reset-password
+ */
+export async function resetPassword(req, res, next) {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Reset token and new password are required' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
+    const user = await User.findOne({
+      resetPasswordToken: tokenHash,
+      resetPasswordExpires: { $gt: Date.now() },
+    }).select('+passwordHash');
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired password reset token' });
+    }
+
+    user.passwordHash = await User.hashPassword(newPassword);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password has been successfully updated. You may now log in.',
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Update authenticated user profile
+ * PATCH /api/auth/profile
+ */
+export async function updateProfile(req, res, next) {
+  try {
+    const { name, phone } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (name && name.trim()) user.name = name.trim();
+    if (phone !== undefined) user.phone = phone.trim();
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: { user: user.toJSON() },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Change authenticated user password
+ * POST /api/auth/change-password
+ */
+export async function changePassword(req, res, next) {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Current password and new password are required' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters' });
+    }
+
+    const user = await User.findById(req.user._id).select('+passwordHash');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Current password is incorrect' });
+    }
+
+    user.passwordHash = await User.hashPassword(newPassword);
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password updated successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Log out
+ * POST /api/auth/logout
+ */
+export async function logout(req, res) {
+  res.status(200).json({
+    success: true,
+    message: 'Logged out successfully',
+  });
+}
+
