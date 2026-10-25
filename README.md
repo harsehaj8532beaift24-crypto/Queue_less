@@ -252,15 +252,20 @@ Test 6: QR Code Verification
   ✅ PASS: Token has a secure cryptographic qrTokenHash
   ✅ PASS: QR hash successfully resolves to genuine token in MongoDB
   ✅ PASS: Counterfeit QR hash is properly rejected
+  ✅ PASS: verifyQR endpoint validates genuine token
+  ✅ PASS: verifyQR returns verified token metadata
+  ✅ PASS: publicViewToken endpoint returns masked public details
+  ✅ PASS: executeQueueAction transitions token to calling state
+  ✅ PASS: verifyQR rejects counterfeit token with 404
 Test 7: AI Waiting Time Prediction Engine
-  ✅ PASS: Estimated wait time calculated: 23 mins
-  ✅ PASS: Confidence score: 91%
+  ✅ PASS: Estimated wait time calculated: 14 mins
+  ✅ PASS: Confidence score: 95%
   ✅ PASS: Smart arrival tip generated
 Test 8: Database Aggregation Analytics
   ✅ PASS: MongoDB aggregation pipeline executed successfully
-  ✅ PASS: Aggregated 61 historical records
+  ✅ PASS: Aggregated 72 historical records
 ======================================================
-📊 Test Results: 30 Passed, 0 Failed
+📊 Test Results: 35 Passed, 0 Failed
 ======================================================
 ```
 
@@ -294,7 +299,11 @@ Test 8: Database Aggregation Analytics
 * `PATCH /api/tokens/:tokenId/cancel` — Cancel a token (authorized by owner or staff).
 * `PATCH /api/tokens/:tokenId/pushback` — Delay token turn by +10 minutes.
 * `PATCH /api/tokens/:tokenId/status` — *(Staff/Admin)* Update status to `serving`, `completed`, or `cancelled`.
-* `POST /api/tokens/verify-qr` — Staff QR verification endpoint validating token authenticity and eligibility.
+
+### QR Verification & Actions (`/api/qr`)
+* `POST /api/qr/verify` — Verify token authenticity and counter eligibility via QR payload, token hash, or token ID.
+* `GET /api/qr/view/:ref` — Public unauthenticated endpoint for smartphone cameras scanning the QR code, returning privacy-masked ticket details.
+* `POST /api/qr/action` — Staff counter action execution (`call`, `serve`, `complete`, `skip`) directly from scanner results. Prevents duplicate serving of completed tokens.
 
 ### Analytics (`/api/analytics`)
 * `GET /api/analytics/overview?businessId=` — Real database aggregated metrics: total issued, currently waiting, average wait time, average service duration, efficiency score, and hourly traffic distribution.
