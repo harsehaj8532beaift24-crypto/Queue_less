@@ -9,6 +9,7 @@
     "dev:server": "node server/server.js",
     "server:seed": "node server/seed/seed.js",
     "server:test": "node server/tests/verify_system.js",
+    "server:test:flow": "node server/tests/test_live_flow.js",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview"
