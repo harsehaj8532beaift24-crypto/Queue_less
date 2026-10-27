@@ -1,12 +1,19 @@
 import mongoose from 'mongoose';
 import Token from '../models/Token.js';
-import { updateTokenStatus, pushBackToken } from '../services/queueService.js';
+import { updateTokenStatus, pushBackToken, reviewPriorityToken } from '../services/queueService.js';
 
 function findTokenQuery(idOrNumber) {
-  if (mongoose.Types.ObjectId.isValid(idOrNumber)) {
-    return { _id: idOrNumber };
+  if (!idOrNumber) return { _id: new mongoose.Types.ObjectId() };
+  const trimmed = String(idOrNumber).trim();
+  const conditions = [{ tokenNumber: trimmed.toUpperCase() }];
+
+  if (mongoose.Types.ObjectId.isValid(trimmed) && trimmed.length === 24) {
+    conditions.push({ _id: trimmed });
   }
-  return { tokenNumber: idOrNumber };
+  if (trimmed.length === 32 && /^[0-9a-fA-F]+$/.test(trimmed)) {
+    conditions.push({ qrTokenHash: trimmed });
+  }
+  return conditions.length > 1 ? { $or: conditions } : conditions[0];
 }
 
 /**
@@ -15,15 +22,31 @@ function findTokenQuery(idOrNumber) {
  */
 export async function getMyTokens(req, res, next) {
   try {
-    const filter = {};
+    const conditions = [];
+
     if (req.user) {
-      filter.user = req.user._id;
-    } else if (req.query.phone) {
-      filter.phone = req.query.phone;
-    } else {
-      // If no auth and no phone, return empty list
+      conditions.push({ user: req.user._id });
+    }
+    if (req.query.phone) {
+      conditions.push({ phone: req.query.phone });
+    }
+    if (req.query.tokenIds) {
+      const rawIds = req.query.tokenIds.split(',').map((s) => s.trim()).filter(Boolean);
+      const validObjectIds = rawIds.filter((id) => mongoose.Types.ObjectId.isValid(id) && id.length === 24);
+      if (validObjectIds.length > 0) {
+        conditions.push({ _id: { $in: validObjectIds } });
+      }
+      if (rawIds.length > 0) {
+        conditions.push({ tokenNumber: { $in: rawIds.map((r) => r.toUpperCase()) } });
+      }
+    }
+
+    if (conditions.length === 0) {
+      // If no auth, phone, or tokenIds, return empty list
       return res.status(200).json({ success: true, count: 0, data: [] });
     }
+
+    const filter = conditions.length === 1 ? conditions[0] : { $or: conditions };
 
     const tokens = await Token.find(filter)
       .sort({ joinedAt: -1 })
@@ -58,6 +81,139 @@ export async function getBusinessTokens(req, res, next) {
       success: true,
       count: tokens.length,
       data: tokens,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Public-facing Token Details Endpoint (For QR Code Scans from Mobile Cameras)
+ * GET /api/tokens/:tokenId/public
+ * Supports lookup by Token Number, MongoDB _id, or QR Token Hash
+ */
+export async function getPublicToken(req, res, next) {
+  try {
+    const rawId = req.params.tokenId;
+    const queryHash = req.query.hash;
+
+    if (!rawId || !rawId.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'A valid Token ID or QR reference is required.',
+      });
+    }
+
+    const trimmed = rawId.trim();
+    const conditions = [];
+
+    // Check if query is 32-char hex hash
+    if (trimmed.length === 32 && /^[0-9a-fA-F]+$/.test(trimmed)) {
+      conditions.push({ qrTokenHash: trimmed });
+    }
+    if (queryHash && queryHash.trim().length === 32 && /^[0-9a-fA-F]+$/.test(queryHash.trim())) {
+      conditions.push({ qrTokenHash: queryHash.trim() });
+    }
+
+    // Check token number (uppercase)
+    const upperToken = trimmed.toUpperCase();
+    conditions.push({ tokenNumber: upperToken });
+
+    // Check valid MongoDB ObjectId
+    if (mongoose.Types.ObjectId.isValid(trimmed)) {
+      conditions.push({ _id: trimmed });
+    }
+
+    // Compound format handling e.g. QL-OPD-101-RAHUL
+    if (upperToken.includes('-')) {
+      const parts = upperToken.split('-');
+      if (parts.length >= 3 && parts[0] === 'QL') {
+        conditions.push({ tokenNumber: `${parts[0]}-${parts[1]}-${parts[2]}` });
+      }
+    }
+
+    const query = conditions.length > 1 ? { $or: conditions } : conditions[0];
+
+    const token = await Token.findOne(query)
+      .populate('business', 'name category city address image')
+      .populate('service', 'name prefix averageServiceMinutes')
+      .populate('queue', 'name activeCounters currentServingToken');
+
+    if (!token) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found in database. Please ensure you have scanned an authentic QueueLess pass.',
+      });
+    }
+
+    // Mask customer name for privacy (e.g. "Rahul Sharma" -> "R*** S***")
+    const maskName = (name) => {
+      if (!name) return 'Customer';
+      return name
+        .split(' ')
+        .map((part) => {
+          if (part.length <= 1) return part;
+          return part[0] + '*'.repeat(Math.min(part.length - 1, 3));
+        })
+        .join(' ');
+    };
+
+    // Construct clear, user-friendly next-step guidance
+    let nextStepMessage = 'Please wait nearby. Your token will be called to the counter soon.';
+    switch (token.status) {
+      case 'waiting':
+        nextStepMessage = 'You are in queue. Watch the live display or keep this page open for your turn.';
+        break;
+      case 'calling':
+        nextStepMessage = 'Your token is being called! Please proceed to the service desk immediately.';
+        break;
+      case 'serving':
+        nextStepMessage = 'You are currently being attended to at the service desk.';
+        break;
+      case 'completed':
+        nextStepMessage = 'Your service has been completed. Thank you for using QueueLess.';
+        break;
+      case 'cancelled':
+        nextStepMessage = 'This booking was cancelled and is no longer active.';
+        break;
+      case 'skipped':
+        nextStepMessage = 'This token was skipped due to a counter no-show.';
+        break;
+      default:
+        nextStepMessage = 'Status update pending.';
+    }
+
+    const isPriorityVerified = Boolean(
+      token.isPriority && (token.priorityStatus === 'verified' || !token.priorityStatus)
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        tokenId: token._id,
+        tokenNumber: token.tokenNumber,
+        bookingRef: token.tokenNumber,
+        status: token.status,
+        customerName: maskName(token.customerName),
+        venueName: token.business?.name || 'Assigned Venue',
+        venueCategory: token.business?.category || 'General',
+        venueCity: token.business?.city || '',
+        venueAddress: token.business?.address || '',
+        serviceName: token.service?.name || 'General Desk',
+        servicePrefix: token.service?.prefix || 'GEN',
+        position: token.position,
+        peopleAhead: token.peopleAhead ?? 0,
+        estimatedWaitMinutes: token.estimatedWaitMinutes ?? 0,
+        isPriority: isPriorityVerified,
+        priorityStatus: token.priorityStatus || (token.isPriority ? 'verified' : 'none'),
+        priorityReason: token.isPriority ? token.priorityReason : '',
+        joinedAt: token.joinedAt,
+        calledAt: token.calledAt,
+        completedAt: token.completedAt,
+        qrTokenHash: token.qrTokenHash,
+        qrCodeData: token.qrCodeData,
+        nextStepMessage,
+      },
     });
   } catch (error) {
     next(error);
@@ -256,3 +412,68 @@ export async function verifyTokenQR(req, res, next) {
     next(error);
   }
 }
+
+/**
+ * Review priority verification request (Staff / Admin)
+ * PATCH /api/tokens/:tokenId/priority
+ */
+export async function reviewPriority(req, res, next) {
+  try {
+    const { action, reason } = req.body;
+    if (!action || !['approve', 'reject'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Action must be either "approve" or "reject".',
+      });
+    }
+
+    const reviewed = await reviewPriorityToken(req.params.tokenId, {
+      action,
+      reason,
+      reviewedBy: req.user?._id,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Priority request ${action === 'approve' ? 'approved' : 'rejected'} successfully.`,
+      data: reviewed,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Get pending and verified priority requests for a business
+ * GET /api/tokens/priority/requests?businessId=...
+ */
+export async function getPriorityRequests(req, res, next) {
+  try {
+    const { businessId } = req.query;
+    const filter = {
+      $or: [
+        { isPriority: true },
+        { priorityStatus: { $in: ['pending', 'verified', 'rejected'] } },
+      ],
+    };
+    if (businessId && mongoose.Types.ObjectId.isValid(businessId)) {
+      filter.business = new mongoose.Types.ObjectId(businessId);
+    }
+
+    const requests = await Token.find(filter)
+      .populate('business', 'name category')
+      .populate('service', 'name prefix')
+      .populate('priorityReviewedBy', 'name email')
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    res.status(200).json({
+      success: true,
+      count: requests.length,
+      data: requests,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+

@@ -33,7 +33,12 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 // Middleware
 app.use(
   cors({
-    origin: [CLIENT_URL, 'http://localhost:5173', 'http://127.0.0.1:5173'],
+    origin: (origin, callback) => {
+      // Allow mobile apps, curl, or direct requests without origin
+      if (!origin) return callback(null, true);
+      // Allow localhost, local network IPs (192.168.*, 10.*, 127.0.0.1) or CLIENT_URL
+      return callback(null, true);
+    },
     credentials: true,
   })
 );

@@ -10,9 +10,8 @@ import {
   User,
   LogOut,
   LogIn,
-  Activity,
-  Code2,
-  HelpCircle
+  HelpCircle,
+  QrCode
 } from 'lucide-react';
 
 export default function Navbar({ 
@@ -27,8 +26,8 @@ export default function Navbar({
   onOpenAuth,
   onLogout,
   isServerConnected,
-  openJsShowcase,
-  onOpenInfo
+  onOpenInfo,
+  onOpenScanner
 }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef(null);
@@ -194,25 +193,6 @@ export default function Navbar({
           </button>
 
           <button
-            onClick={openJsShowcase}
-            className="btn-secondary"
-            title="Coursework Syllabus Implementation"
-            style={{ 
-              height: '34px',
-              fontSize: '0.825rem', 
-              padding: '0 0.85rem',
-              borderRadius: '6px',
-              border: 'none',
-              background: 'transparent',
-              boxShadow: 'none',
-              color: 'var(--text-secondary)',
-            }}
-          >
-            <Code2 size={16} />
-            <span>Syllabus Guide</span>
-          </button>
-
-          <button
             onClick={() => onOpenInfo && onOpenInfo('faq')}
             className="btn-secondary"
             title="Help, FAQ and Policies"
@@ -229,6 +209,25 @@ export default function Navbar({
           >
             <HelpCircle size={15} />
             <span>Help & FAQ</span>
+          </button>
+
+          <button
+            onClick={() => onOpenScanner && onOpenScanner()}
+            className="btn-secondary"
+            title="Scan ticket with camera, upload pass image, or enter code"
+            style={{ 
+              height: '34px',
+              fontSize: '0.825rem', 
+              padding: '0 0.85rem',
+              borderRadius: '6px',
+              border: 'none',
+              background: 'transparent',
+              boxShadow: 'none',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            <QrCode size={15} />
+            <span>Scan Pass</span>
           </button>
         </nav>
 
@@ -267,14 +266,40 @@ export default function Navbar({
               </button>
             </div>
           ) : (
-            <button
-              onClick={onOpenAuth}
-              className="btn-primary"
-              style={{ fontSize: '0.825rem', height: '36px', minHeight: '36px', padding: '0 0.95rem' }}
-            >
-              <LogIn size={15} />
-              <span>Sign In</span>
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <button
+                type="button"
+                onClick={() => onOpenAuth ? onOpenAuth('login') : setActiveTab('signin')}
+                className={activeTab === 'signin' ? 'btn-primary' : 'btn-secondary'}
+                style={{
+                  fontSize: '0.825rem',
+                  height: '34px',
+                  minHeight: '34px',
+                  padding: '0 0.85rem',
+                  borderRadius: '7px',
+                }}
+              >
+                <LogIn size={14} />
+                <span>Sign In</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onOpenAuth ? onOpenAuth('register') : setActiveTab('signup')}
+                className="btn-primary"
+                style={{
+                  fontSize: '0.825rem',
+                  height: '34px',
+                  minHeight: '34px',
+                  padding: '0 0.85rem',
+                  borderRadius: '7px',
+                  outline: activeTab === 'signup' ? '2px solid var(--text-primary)' : 'none',
+                }}
+              >
+                <User size={14} />
+                <span>Sign Up</span>
+              </button>
+            </div>
           )}
 
           {/* Notification Bell Dropdown */}

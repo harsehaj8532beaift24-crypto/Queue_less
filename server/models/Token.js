@@ -59,6 +59,10 @@ const tokenSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    priorityCategory: {
+      type: String,
+      default: 'Regular',
+    },
     status: {
       type: String,
       enum: ['waiting', 'calling', 'serving', 'completed', 'cancelled', 'skipped'],
@@ -74,6 +78,15 @@ const tokenSchema = new mongoose.Schema(
     priorityApprovedAt: {
       type: Date,
       default: null,
+    },
+    priorityReviewedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    priorityReviewNote: {
+      type: String,
+      default: '',
     },
     position: {
       type: Number,

@@ -10,6 +10,8 @@
     "server:seed": "node server/seed/seed.js",
     "server:test": "node server/tests/verify_system.js",
     "server:test:flow": "node server/tests/test_live_flow.js",
+    "server:test:priority": "node server/tests/test_priority_platform.js",
+    "server:test:mobile": "node server/tests/verify_mobile_flow.js",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview"

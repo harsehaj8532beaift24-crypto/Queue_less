@@ -9,7 +9,9 @@
     "dev": "nodemon server.js",
     "seed": "node seed/seed.js",
     "test": "node tests/verify_system.js",
-    "test:flow": "node tests/test_live_flow.js"
+    "test:flow": "node tests/test_live_flow.js",
+    "test:priority": "node tests/test_priority_platform.js",
+    "test:mobile": "node tests/verify_mobile_flow.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

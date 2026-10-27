@@ -1,17 +1,20 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import Navbar from './components/Navbar';
 import { VenueCard } from './components/VenueCard';
 import { VenueModal } from './components/VenueModal';
 import { BookingModal } from './components/BookingModal';
 import { TokenCard } from './components/TokenCard';
-import { AdminDashboard } from './components/AdminDashboard';
-import { JSShowcaseModal } from './components/JSShowcaseModal';
-import { AuthModal } from './components/AuthModal';
-import { InfoModal } from './components/InfoModal';
-import { TokenVerificationView } from './components/TokenVerificationView';
 import { Footer } from './components/Footer';
+import { X } from 'lucide-react';
 
-import { CATEGORIES, INITIAL_VENUES } from './data/initialData';
+const AdminDashboard = lazy(() => import('./components/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const AuthPage = lazy(() => import('./components/AuthPage').then(m => ({ default: m.AuthPage })));
+const AuthModal = lazy(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
+const InfoModal = lazy(() => import('./components/InfoModal').then(m => ({ default: m.InfoModal })));
+const TokenVerificationView = lazy(() => import('./components/TokenVerificationView').then(m => ({ default: m.TokenVerificationView })));
+const QRScannerView = lazy(() => import('./components/QRScannerView').then(m => ({ default: m.QRScannerView })));
+
+import { CATEGORIES } from './data/initialData';
 import { 
   getStoredVenues, 
   saveStoredVenues, 
@@ -26,25 +29,14 @@ import {
   businessApi, 
   queueApi, 
   tokenApi, 
-  notificationApi, 
   getSocket 
 } from './api/client';
 
 import { 
   Search, 
-  Sparkles, 
-  MapPin, 
-  Clock, 
-  ShieldCheck, 
-  Zap,
-  Building2,
-  Ticket,
-  Filter,
-  CheckCircle2,
-  ArrowRight,
-  Wifi,
-  WifiOff,
-  RefreshCw
+  Building2, 
+  Ticket, 
+  RefreshCw 
 } from 'lucide-react';
 
 export default function App() {
@@ -58,9 +50,9 @@ export default function App() {
   
   const [venueModal, setVenueModal] = useState(null);
   const [bookingModal, setBookingModal] = useState(null);
-  const [showJsShowcase, setShowJsShowcase] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [infoModalTab, setInfoModalTab] = useState(null); // 'faq', 'contact', 'terms'
+  const [showScannerModal, setShowScannerModal] = useState(false);
   const [verificationRef, setVerificationRef] = useState(null); // QR pass reference (token number or hash)
   const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
   
@@ -126,17 +118,24 @@ export default function App() {
     }
   }, [selectedCategory, searchQuery]);
 
-  // Fetch User Tokens from Real Backend
+  // Fetch User Tokens from Real Backend (Synchronizes guest tokens and authenticated tokens)
   const loadTokensFromBackend = useCallback(async () => {
     try {
-      const res = await tokenApi.getMyTokens();
+      const stored = getStoredUserTokens() || [];
+      const tokenIds = stored.map(t => t._id || t.tokenNumber || t.tokenId).filter(Boolean);
+      const phone = currentUser?.phone || '';
+      const res = await tokenApi.getMyTokens(phone, tokenIds.join(','));
       if (res.success && res.data) {
-        setTokens(res.data);
+        if (res.data.length > 0) {
+          setTokens(res.data);
+        } else if (!currentUser && stored.length > 0) {
+          setTokens(stored);
+        }
       }
     } catch {
       // Keep local tokens fallback
     }
-  }, []);
+  }, [currentUser]);
 
   // Initial Data Fetch & Auth Verification
   useEffect(() => {
@@ -169,24 +168,40 @@ export default function App() {
       const params = new URLSearchParams(search);
 
       // 1. QR Pass Verification (from mobile camera scan or direct link)
-      const qrToken = params.get('token');
-      const qrHash = params.get('hash');
-      const qrVerify = params.get('verify') || params.get('ref');
-
-      if (qrHash || qrToken || qrVerify) {
-        setVerificationRef(qrHash || qrToken || qrVerify);
-      } else if (path.includes('/verify-token') || path.includes('/verify')) {
-        const parts = path.split('/').filter(Boolean);
-        if (parts.length > 1 && (parts[0] === 'verify' || parts[0] === 'verify-token')) {
-          setVerificationRef(parts[1]);
+      const pathParts = path.split('/').filter(Boolean);
+      let pathTokenRef = null;
+      if (pathParts.length >= 2) {
+        const prefix = pathParts[0].toLowerCase();
+        if (prefix === 'token' || prefix === 'tokens' || prefix === 'verify' || prefix === 'verify-token') {
+          pathTokenRef = decodeURIComponent(pathParts.slice(1).join('/'));
         }
       }
 
-      // 2. Direct Auth Modal navigation
+      const qrToken = params.get('token');
+      const qrHash = params.get('hash');
+      const qrVerify = params.get('verify') || params.get('ref') || params.get('tokenId');
+
+      // Prioritize path-based token ID (/token/:tokenId), then explicit token parameter, then verify/ref, then crypto hash
+      const resolvedRef = pathTokenRef || qrToken || qrVerify || (qrHash && qrHash.length === 32 ? qrHash : null) || qrHash;
+      if (resolvedRef) {
+        setVerificationRef(resolvedRef);
+      }
+
+      // 2. Direct Auth Page & Tab Navigation via URL
       const lowerHash = hash.toLowerCase();
       const lowerPath = path.toLowerCase();
       const lowerSearch = search.toLowerCase();
       if (
+        lowerHash.includes('signup') ||
+        lowerHash.includes('register') ||
+        lowerPath.includes('signup') ||
+        lowerPath.includes('register') ||
+        lowerSearch.includes('signup') ||
+        lowerSearch.includes('register')
+      ) {
+        setActiveTab('signup');
+        setVerificationRef(null);
+      } else if (
         lowerHash.includes('login') ||
         lowerHash.includes('signin') ||
         lowerPath.includes('login') ||
@@ -194,7 +209,14 @@ export default function App() {
         lowerSearch.includes('login') ||
         lowerSearch.includes('signin')
       ) {
-        setShowAuthModal(true);
+        setActiveTab('signin');
+        setVerificationRef(null);
+      } else if (lowerHash.includes('tokens') || lowerPath.includes('tokens')) {
+        setActiveTab('tokens');
+      } else if (lowerHash.includes('admin') || lowerPath.includes('admin')) {
+        setActiveTab('admin');
+      } else if (lowerHash.includes('explore')) {
+        setActiveTab('explore');
       }
     };
 
@@ -235,6 +257,40 @@ export default function App() {
         loadTokensFromBackend();
       });
 
+      // Real-time batch position and wait time updates across all clients
+      socket.on('tokens_batch_updated', (batch) => {
+        if (!Array.isArray(batch)) return;
+        setTokens((prev) =>
+          prev.map((t) => {
+            const match = batch.find(
+              (b) =>
+                (b._id && (t._id === b._id || t.id === b._id)) ||
+                (b.tokenNumber && (t.tokenNumber === b.tokenNumber || t.tokenId === b.tokenNumber))
+            );
+            return match ? { ...t, ...match } : t;
+          })
+        );
+      });
+
+      // Listen for real-time token state transitions across all connected clients
+      socket.on('token_status_changed', (updatedToken) => {
+        if (!updatedToken) return;
+        setTokens((prev) =>
+          prev.map((t) => {
+            const match =
+              (updatedToken._id && (t._id === updatedToken._id || t.id === updatedToken._id)) ||
+              (updatedToken.tokenNumber &&
+                (t.tokenNumber === updatedToken.tokenNumber || t.tokenId === updatedToken.tokenNumber));
+            return match ? { ...t, ...updatedToken } : t;
+          })
+        );
+        loadTokensFromBackend();
+        loadVenuesFromBackend();
+        if (updatedToken?.status === 'calling') {
+          addNotification('Turn Alert!', `Token ${updatedToken.tokenNumber || ''} is now called to the service counter.`);
+        }
+      });
+
       // Listen for personal notifications
       socket.on('new_notification', (notif) => {
         addNotification(notif.title, notif.message);
@@ -249,6 +305,8 @@ export default function App() {
         socket.off('disconnect');
         socket.off('queue_updated');
         socket.off('business_queue_updated');
+        socket.off('tokens_batch_updated');
+        socket.off('token_status_changed');
         socket.off('new_notification');
       }
     };
@@ -257,8 +315,21 @@ export default function App() {
   // Auth Handlers
   const handleAuthSuccess = (user) => {
     setCurrentUser(user);
-    addNotification('Logged in', `Welcome back, ${user.name}!`);
+    addNotification('Authentication Successful', `Welcome back, ${user.name}!`);
     loadTokensFromBackend();
+    if (user.role === 'admin' || user.role === 'staff') {
+      setActiveTab('admin');
+      window.location.hash = 'admin';
+    } else {
+      setActiveTab('explore');
+      window.location.hash = 'explore';
+    }
+  };
+
+  const handleNavigateAuth = (mode = 'login') => {
+    const target = mode === 'register' ? 'signup' : 'signin';
+    setActiveTab(target);
+    window.location.hash = target;
   };
 
   const handleLogout = () => {
@@ -285,8 +356,37 @@ export default function App() {
   // Confirm New Token Booking (MongoDB API Call with Fallback)
   const handleConfirmBooking = async (bookingData) => {
     setIsSubmittingBooking(true);
+    let createdToken = null;
     try {
-      const qId = bookingData.queueId;
+      let qId = bookingData.queueId;
+      if (!qId) {
+        try {
+          if (bookingData.venueId) {
+            const qRes = await queueApi.getQueues(bookingData.venueId);
+            if (qRes.success && qRes.data && qRes.data.length > 0) {
+              const match = qRes.data.find(q =>
+                q.service?.prefix === bookingData.department?.prefix ||
+                q.name?.toLowerCase().includes(bookingData.departmentName?.toLowerCase())
+              );
+              qId = match ? match._id : qRes.data[0]._id;
+            }
+          }
+
+          if (!qId) {
+            const allQueues = await queueApi.getQueues();
+            if (allQueues.success && allQueues.data && allQueues.data.length > 0) {
+              const globalMatch = allQueues.data.find(q =>
+                q.service?.prefix === bookingData.department?.prefix ||
+                q.name?.toLowerCase().includes(bookingData.departmentName?.toLowerCase())
+              );
+              qId = globalMatch ? globalMatch._id : allQueues.data[0]._id;
+            }
+          }
+        } catch (lookupErr) {
+          console.warn('Queue auto-resolution note:', lookupErr);
+        }
+      }
+
       if (qId) {
         // Real Backend Booking Call
         const res = await queueApi.join(qId, {
@@ -298,11 +398,13 @@ export default function App() {
         });
 
         if (res.success && res.data) {
-          const createdToken = res.data;
+          createdToken = res.data;
           setTokens(prev => [createdToken, ...prev]);
           addNotification('Token Generated!', `Token ${createdToken.tokenNumber} created in MongoDB for ${bookingData.venueName}.`);
         }
-      } else {
+      }
+
+      if (!createdToken) {
         // Fallback local booking
         const randomNum = Math.floor(100 + Math.random() * 900);
         const tokenId = `QL-${bookingData.department?.prefix || 'TOK'}-${randomNum}`;
@@ -323,17 +425,19 @@ export default function App() {
           estimatedWaitMinutes: bookingData.aiEstimatedMins || 10,
           status: 'waiting',
           issuedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          qrCodeData: JSON.stringify({ tokenId, venue: bookingData.venueName, customer: bookingData.customerName }),
+          qrTokenHash: '3144f0368fe040c383d9a2d44a818223',
+          qrCodeData: `${window.location.origin}/token/${encodeURIComponent(tokenId)}?hash=3144f0368fe040c383d9a2d44a818223`,
         };
+        createdToken = newBooking;
         setTokens(prev => [newBooking, ...prev]);
         addNotification('Token Generated!', `Token ${tokenId} created for ${bookingData.venueName}.`);
       }
 
-      setBookingModal(null);
-      setActiveTab('tokens');
       loadVenuesFromBackend();
+      return createdToken;
     } catch (err) {
       addNotification('Booking Error', err.message || 'Could not complete token booking');
+      throw err;
     } finally {
       setIsSubmittingBooking(false);
     }
@@ -458,18 +562,21 @@ export default function App() {
       {/* Navigation Header */}
       <Navbar 
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={(tab) => {
+          setActiveTab(tab);
+          window.location.hash = tab;
+        }}
         tokensCount={activeUserTokens.length}
         theme={theme}
         toggleTheme={toggleTheme}
         notifications={notifications}
         clearNotifications={() => setNotifications([])}
         currentUser={currentUser}
-        onOpenAuth={() => setShowAuthModal(true)}
+        onOpenAuth={handleNavigateAuth}
         onLogout={handleLogout}
         isServerConnected={isServerConnected}
-        openJsShowcase={() => setShowJsShowcase(true)}
         onOpenInfo={(tab) => setInfoModalTab(tab || 'faq')}
+        onOpenScanner={() => setShowScannerModal(true)}
       />
 
       {/* Main Body */}
@@ -477,20 +584,22 @@ export default function App() {
         <div className="app-container">
 
           {verificationRef ? (
-            <TokenVerificationView
-              tokenRef={verificationRef}
-              onBack={() => {
-                setVerificationRef(null);
-                try {
-                  window.history.pushState({}, '', window.location.pathname.startsWith('/verify') ? '/' : window.location.pathname);
-                } catch {}
-              }}
-            />
+            <Suspense fallback={<div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-secondary)' }}>Loading token verification...</div>}>
+              <TokenVerificationView
+                tokenRef={verificationRef}
+                onBack={() => {
+                  setVerificationRef(null);
+                  try {
+                    window.history.pushState({}, '', '/');
+                  } catch {}
+                }}
+              />
+            </Suspense>
           ) : (
             <>
               {/* TAB 1: EXPLORE VENUES & BOOK QUEUE */}
           {activeTab === 'explore' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
               
               {/* Hero Banner Header */}
               <section
@@ -503,37 +612,50 @@ export default function App() {
                   background: 'var(--bg-secondary)',
                   borderRadius: '12px',
                   border: '1px solid var(--border-color)',
+                  boxShadow: 'var(--shadow-sm)',
                 }}
               >
-                <div style={{ maxWidth: '680px', position: 'relative', zIndex: 2 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
-                    <span className="badge badge-charcoal" style={{ letterSpacing: '0.04em' }}>
-                      VIRTUAL QUEUE SYSTEM
+                <div style={{ maxWidth: '640px', position: 'relative', zIndex: 2 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
+                    <span 
+                      className="badge badge-indigo"
+                      style={{ 
+                        fontSize: '0.72rem', 
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em'
+                      }}
+                    >
+                      Virtual Queue Management
                     </span>
-                    <span className="badge badge-emerald">
-                      REAL-TIME SYNC
+                    <span 
+                      className="badge badge-emerald"
+                      style={{ fontSize: '0.72rem', fontWeight: 600 }}
+                    >
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--emerald)' }} />
+                      Real-Time Sync Active
                     </span>
                   </div>
 
                   <h1 style={{
-                    fontSize: 'clamp(1.8rem, 4vw, 2.6rem)',
-                    fontWeight: 800,
-                    lineHeight: 1.2,
-                    marginBottom: '0.85rem',
-                    letterSpacing: '-0.02em',
+                    fontSize: 'clamp(1.75rem, 3.5vw, 2.35rem)',
+                    fontWeight: 700,
+                    lineHeight: 1.25,
+                    marginBottom: '0.75rem',
+                    color: 'var(--text-primary)',
                   }}>
                     Skip Physical Lines. <br />
-                    <span style={{ color: 'var(--text-secondary)' }}>Queue Remotely From Anywhere.</span>
+                    <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Queue Remotely From Anywhere.</span>
                   </h1>
 
                   <p style={{
-                    fontSize: '0.96rem',
+                    fontSize: '0.92rem',
                     color: 'var(--text-secondary)',
-                    marginBottom: '1.75rem',
+                    marginBottom: '1.5rem',
                     lineHeight: 1.6,
-                    maxWidth: '580px',
+                    maxWidth: '560px',
                   }}>
-                    Book digital queue tokens for hospitals, banks, salons, government offices, and clinics. Receive live queue position updates, verified QR passes, and arrival alerts directly on your device.
+                    Browse active hospitals, banks, salons, and offices. Check real-time counter calls, estimate wait times accurately, and receive instant arrival alerts.
                   </p>
 
                   {/* Search Bar Input */}
@@ -541,14 +663,14 @@ export default function App() {
                     display: 'flex',
                     alignItems: 'center',
                     background: 'var(--input-bg)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '16px',
-                    padding: '0.45rem 0.65rem 0.45rem 1.15rem',
-                    boxShadow: 'var(--shadow-md)',
-                    maxWidth: '540px',
-                    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                    border: '1px solid var(--input-border)',
+                    borderRadius: '8px',
+                    padding: '0.45rem 0.75rem 0.45rem 1rem',
+                    boxShadow: 'var(--shadow-sm)',
+                    maxWidth: '520px',
+                    transition: 'border-color 0.15s ease',
                   }}>
-                    <Search size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0, marginRight: '0.65rem' }} />
+                    <Search size={16} style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: '0.65rem' }} />
                     <input 
                       type="text"
                       placeholder="Search hospitals, banks, salons, or city..."
@@ -560,8 +682,10 @@ export default function App() {
                         border: 'none',
                         background: 'transparent',
                         color: 'var(--text-primary)',
-                        fontSize: '0.92rem',
+                        fontSize: '0.9rem',
                         outline: 'none',
+                        height: '28px',
+                        padding: 0,
                       }}
                     />
                     {searchQuery && (
@@ -574,9 +698,9 @@ export default function App() {
                           background: 'none',
                           color: 'var(--text-muted)',
                           cursor: 'pointer',
-                          padding: '0.2rem 0.5rem',
+                          padding: '0.2rem 0.4rem',
                           fontSize: '0.8rem',
-                          fontWeight: 600,
+                          fontWeight: 500,
                         }}
                       >
                         Clear
@@ -585,6 +709,7 @@ export default function App() {
                   </div>
                 </div>
               </section>
+
 
               {/* Category Filter Pills */}
               <div
@@ -778,13 +903,34 @@ export default function App() {
 
           {/* TAB 3: BUSINESS ADMIN PORTAL */}
           {activeTab === 'admin' && (
-            <AdminDashboard
-              venues={venues}
-              tokens={tokens}
-              onUpdateVenue={handleUpdateVenue}
-              onUpdateTokenStatus={handleUpdateTokenStatus}
-              onAddWalkInToken={handleAddWalkInToken}
-            />
+            <Suspense fallback={<div style={{ textAlign: 'center', padding: '3.5rem 1rem', color: 'var(--text-secondary)' }}>Loading Staff & Admin Portal...</div>}>
+              <AdminDashboard
+                venues={venues}
+                tokens={tokens}
+                onUpdateVenue={handleUpdateVenue}
+                onUpdateTokenStatus={handleUpdateTokenStatus}
+                onAddWalkInToken={handleAddWalkInToken}
+                currentUser={currentUser}
+              />
+            </Suspense>
+          )}
+
+          {/* TAB 4: DEDICATED SIGN IN & SIGN UP PAGE */}
+          {(activeTab === 'signin' || activeTab === 'signup') && (
+            <Suspense fallback={<div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--text-secondary)' }}>Loading Authentication...</div>}>
+              <AuthPage
+                initialMode={activeTab === 'signup' ? 'register' : 'login'}
+                onAuthSuccess={handleAuthSuccess}
+                onNavigateHome={() => {
+                  setActiveTab('explore');
+                  window.location.hash = 'explore';
+                }}
+                onNavigateTokens={() => {
+                  setActiveTab('tokens');
+                  window.location.hash = 'tokens';
+                }}
+              />
+            </Suspense>
           )}
 
             </>
@@ -814,31 +960,78 @@ export default function App() {
       )}
 
       {showAuthModal && (
-        <AuthModal
-          isOpen={showAuthModal}
-          onClose={() => setShowAuthModal(false)}
-          onAuthSuccess={handleAuthSuccess}
-        />
-      )}
-
-      {showJsShowcase && (
-        <JSShowcaseModal
-          isOpen={showJsShowcase}
-          onClose={() => setShowJsShowcase(false)}
-        />
+        <Suspense fallback={null}>
+          <AuthModal
+            isOpen={showAuthModal}
+            onClose={() => setShowAuthModal(false)}
+            onAuthSuccess={handleAuthSuccess}
+          />
+        </Suspense>
       )}
 
       {infoModalTab && (
-        <InfoModal
-          initialTab={infoModalTab}
-          onClose={() => setInfoModalTab(null)}
-        />
+        <Suspense fallback={null}>
+          <InfoModal
+            initialTab={infoModalTab}
+            onClose={() => setInfoModalTab(null)}
+          />
+        </Suspense>
+      )}
+
+      {showScannerModal && (
+        <div 
+          className="modal-overlay animate-fade-in" 
+          onClick={() => setShowScannerModal(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div 
+            className="glass-modal animate-slide-down"
+            style={{ 
+              width: '100%', 
+              maxWidth: '640px', 
+              maxHeight: '90vh', 
+              overflowY: 'auto', 
+              padding: '1.75rem', 
+              position: 'relative',
+              borderRadius: '16px' 
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowScannerModal(false)}
+              aria-label="Close scanner modal"
+              className="btn-secondary"
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                width: '32px',
+                height: '32px',
+                minHeight: '32px',
+                borderRadius: '50%',
+                padding: 0,
+                zIndex: 10,
+              }}
+            >
+              <X size={16} />
+            </button>
+            <Suspense fallback={<div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>Loading QR Scanner...</div>}>
+              <QRScannerView 
+                onTokenAction={() => {
+                  loadVenuesFromBackend();
+                  loadTokensFromBackend();
+                }}
+              />
+            </Suspense>
+          </div>
+        </div>
       )}
 
       {/* Footer */}
       <Footer 
-        openJsShowcase={() => setShowJsShowcase(true)} 
         onOpenInfo={(tab) => setInfoModalTab(tab || 'faq')} 
+        onNavigateAuth={handleNavigateAuth}
       />
 
     </div>

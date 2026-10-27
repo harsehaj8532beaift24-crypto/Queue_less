@@ -7,11 +7,11 @@ import mongoose from 'mongoose';
 let isConnected = false;
 
 export async function connectDB() {
-  const uri = process.env.MONGODB_URI;
+  const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
 
   if (!uri) {
-    console.error('❌ MONGODB_URI is not defined in environment variables.');
-    throw new Error('MONGODB_URI environment variable missing');
+    console.error('❌ Neither MONGODB_URI nor MONGO_URI is defined in environment variables.');
+    throw new Error('MONGODB_URI/MONGO_URI environment variable missing');
   }
 
   // Prevent multiple connections

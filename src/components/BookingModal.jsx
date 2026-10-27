@@ -5,15 +5,13 @@ import {
   User, 
   Phone, 
   Users, 
-  AlertCircle, 
   CheckCircle2, 
   Clock, 
   ShieldCheck,
-  Ticket,
-  Download,
-  Printer,
-  ArrowRight,
-  QrCode
+  Ticket, 
+  Download, 
+  Printer, 
+  ExternalLink 
 } from 'lucide-react';
 import { predictWaitTime } from '../utils/aiPredictor';
 
@@ -54,12 +52,43 @@ export function BookingModal({
   // Render QR Code canvas when token is confirmed
   useEffect(() => {
     if (confirmedToken && canvasRef.current) {
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
-      const tokenNum = confirmedToken.tokenNumber || confirmedToken.tokenId;
-      const hash = confirmedToken.qrTokenHash || 'dev_hash';
-      const payload = (confirmedToken.qrCodeData && confirmedToken.qrCodeData.startsWith('http'))
-        ? confirmedToken.qrCodeData
-        : `${origin}/verify-token?token=${encodeURIComponent(tokenNum)}&hash=${encodeURIComponent(hash)}`;
+      const tokenNum = confirmedToken.tokenNumber || confirmedToken.tokenId || 'TOKEN';
+      const hash = confirmedToken.qrTokenHash || '';
+      const tokenParam = encodeURIComponent(tokenNum);
+      const hashParam = hash ? `?hash=${encodeURIComponent(hash)}` : '';
+
+      let payload = '';
+
+      // Priority 1: Use backend-generated qrCodeData if it is a valid non-localhost URL
+      if (
+        confirmedToken.qrCodeData &&
+        typeof confirmedToken.qrCodeData === 'string' &&
+        confirmedToken.qrCodeData.startsWith('http') &&
+        !confirmedToken.qrCodeData.includes('localhost') &&
+        !confirmedToken.qrCodeData.includes('127.0.0.1')
+      ) {
+        payload = confirmedToken.qrCodeData;
+      } else {
+        // Priority 2: If current browser window is on a reachable non-localhost origin
+        const isCurrentLocalhost =
+          typeof window !== 'undefined' &&
+          (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+        if (!isCurrentLocalhost && typeof window !== 'undefined') {
+          payload = `${window.location.origin}/token/${tokenParam}${hashParam}`;
+        } else if (
+          confirmedToken.qrCodeData &&
+          typeof confirmedToken.qrCodeData === 'string' &&
+          confirmedToken.qrCodeData.startsWith('http')
+        ) {
+          payload = confirmedToken.qrCodeData;
+        } else {
+          const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
+          payload = `${origin}/token/${tokenParam}${hashParam}`;
+        }
+      }
+
+      console.log('[QueueLess QR] Encoded Pass URL:', payload);
 
       QRCode.toCanvas(
         canvasRef.current,
@@ -115,6 +144,8 @@ export function BookingModal({
       partySize,
       isPriority,
       priorityReason: isPriority ? priorityReason : '',
+      priorityCategory: isPriority ? priorityReason : 'Regular',
+      priorityStatus: isPriority ? 'pending' : 'none',
       venue,
       department,
       aiEstimatedMins: aiPrediction.estimatedMins,
@@ -265,25 +296,41 @@ export function BookingModal({
 
             {/* Confirmation Actions */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const tokenNum = confirmedToken.tokenNumber || confirmedToken.tokenId;
+                    const hash = confirmedToken.qrTokenHash || '3144f0368fe040c383d9a2d44a818223';
+                    onClose();
+                    window.history.pushState({}, '', `/verify-token?token=${encodeURIComponent(tokenNum)}&hash=${encodeURIComponent(hash)}`);
+                    window.dispatchEvent(new Event('popstate'));
+                  }}
+                  className="btn-secondary"
+                  style={{ flex: 1, minWidth: '130px', justifyContent: 'center', fontSize: '0.82rem', padding: '0.65rem' }}
+                >
+                  <ExternalLink size={14} />
+                  <span>Open Live Pass</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={handleDownloadQR}
                   className="btn-secondary"
-                  style={{ flex: 1, justifyContent: 'center', fontSize: '0.85rem', padding: '0.65rem' }}
+                  style={{ flex: 1, minWidth: '130px', justifyContent: 'center', fontSize: '0.82rem', padding: '0.65rem' }}
                 >
                   <Download size={14} />
-                  <span>Download QR Pass</span>
+                  <span>Download Pass</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handlePrint}
                   className="btn-secondary"
-                  style={{ flex: 1, justifyContent: 'center', fontSize: '0.85rem', padding: '0.65rem' }}
+                  style={{ flex: 1, minWidth: '110px', justifyContent: 'center', fontSize: '0.82rem', padding: '0.65rem' }}
                 >
                   <Printer size={14} />
-                  <span>Print Ticket</span>
+                  <span>Print</span>
                 </button>
               </div>
 
@@ -453,8 +500,8 @@ export function BookingModal({
 
               {/* Priority Category Selector */}
               {isPriority && (
-                <div className="animate-fade-in">
-                  <label htmlFor="priorityReasonSelect" style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <label htmlFor="priorityReasonSelect" style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block' }}>
                     Priority Verification Category
                   </label>
                   <select 
@@ -467,6 +514,17 @@ export function BookingModal({
                     <option value="Medical Emergency">Medical Triage / Urgent Case</option>
                     <option value="Infant / Pregnant">Mother with Infant / Pregnant</option>
                   </select>
+                  <p style={{
+                    fontSize: '0.74rem',
+                    color: 'var(--text-secondary)',
+                    lineHeight: 1.4,
+                    background: 'var(--bg-secondary)',
+                    padding: '0.45rem 0.65rem',
+                    borderRadius: '6px',
+                    border: '1px solid var(--border-color)',
+                  }}>
+                    Verification Policy: Priority status will be marked as <strong>Pending Verification</strong> in MongoDB. Please present your verification document to desk staff upon arrival for queue prioritization.
+                  </p>
                 </div>
               )}
 

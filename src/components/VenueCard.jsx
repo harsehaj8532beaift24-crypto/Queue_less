@@ -9,7 +9,8 @@ import {
   Activity,
   Scissors,
   Landmark,
-  Utensils
+  Utensils,
+  Layers
 } from 'lucide-react';
 
 const CATEGORY_ICONS = {
@@ -37,12 +38,13 @@ export function VenueCard({ venue, onSelectVenue, onQuickBook }) {
         overflow: 'hidden',
         position: 'relative',
         height: '100%',
+        borderRadius: '12px',
       }}
     >
       {/* Venue Thumbnail Header */}
       <div style={{
         position: 'relative',
-        height: '160px',
+        height: '150px',
         overflow: 'hidden',
         backgroundColor: 'var(--bg-tertiary)',
       }}>
@@ -54,13 +56,16 @@ export function VenueCard({ venue, onSelectVenue, onQuickBook }) {
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            transition: 'transform 0.4s ease',
+            transition: 'transform 0.3s ease',
           }}
         />
+        
+        {/* Subtle top gradient for chip readability */}
         <div style={{
           position: 'absolute',
           inset: 0,
-          background: 'linear-gradient(to top, rgba(9, 13, 22, 0.92) 0%, rgba(9, 13, 22, 0.2) 60%, transparent 100%)',
+          background: 'linear-gradient(to bottom, rgba(15, 23, 42, 0.45) 0%, transparent 60%)',
+          pointerEvents: 'none',
         }} />
 
         {/* Category Badge */}
@@ -69,8 +74,17 @@ export function VenueCard({ venue, onSelectVenue, onQuickBook }) {
           top: '10px',
           left: '10px',
         }}>
-          <span className="badge badge-indigo" style={{ background: 'rgba(9, 13, 22, 0.85)', backdropFilter: 'blur(8px)' }}>
-            <IconComponent size={13} />
+          <span 
+            className="badge" 
+            style={{ 
+              background: 'rgba(255, 255, 255, 0.92)', 
+              color: '#0F172A',
+              fontWeight: 600,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+              backdropFilter: 'blur(6px)'
+            }}
+          >
+            <IconComponent size={12} style={{ color: 'var(--cyan)' }} />
             {categoryLabel}
           </span>
         </div>
@@ -80,109 +94,119 @@ export function VenueCard({ venue, onSelectVenue, onQuickBook }) {
           position: 'absolute',
           top: '10px',
           right: '10px',
-          background: 'rgba(9, 13, 22, 0.85)',
-          backdropFilter: 'blur(8px)',
-          padding: '0.2rem 0.55rem',
+          background: 'rgba(255, 255, 255, 0.92)',
+          backdropFilter: 'blur(6px)',
+          padding: '0.2rem 0.5rem',
           borderRadius: '999px',
           display: 'flex',
           alignItems: 'center',
           gap: '0.25rem',
-          fontSize: '0.78rem',
+          fontSize: '0.75rem',
           fontWeight: 700,
-          color: 'var(--amber)',
-          border: '1px solid rgba(245, 158, 11, 0.25)',
+          color: '#92400E',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
         }}>
-          <Star size={13} fill="var(--amber)" />
+          <Star size={12} fill="#F59E0B" color="#F59E0B" />
           {venue.rating || 4.5}
-        </div>
-
-        {/* Venue Title Overlay */}
-        <div style={{
-          position: 'absolute',
-          bottom: '10px',
-          left: '12px',
-          right: '12px',
-        }}>
-          <h3 style={{ 
-            fontSize: '1.1rem', 
-            color: '#ffffff', 
-            fontWeight: 700,
-            textShadow: '0 2px 4px rgba(0,0,0,0.6)',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}>
-            {venue.name}
-          </h3>
-          <p style={{ 
-            fontSize: '0.75rem', 
-            color: '#cbd5e1', 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '0.25rem', 
-            marginTop: '1px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}>
-            <MapPin size={12} style={{ flexShrink: 0 }} />
-            {venue.address || venue.city}
-          </p>
         </div>
       </div>
 
       {/* Card Content Body */}
       <div style={{ 
-        padding: '1.1rem', 
+        padding: '1.15rem', 
         display: 'flex', 
         flexDirection: 'column', 
         flexGrow: 1, 
         justifyContent: 'space-between',
-        gap: '0.85rem',
+        gap: '0.9rem',
       }}>
         
+        {/* Title & Location Header */}
+        <div>
+          <h3 style={{ 
+            fontSize: '1.05rem', 
+            color: 'var(--text-primary)', 
+            fontWeight: 700,
+            lineHeight: 1.35,
+            marginBottom: '0.3rem',
+          }}>
+            {venue.name}
+          </h3>
+          <p style={{ 
+            fontSize: '0.8rem', 
+            color: 'var(--text-secondary)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.3rem',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>
+            <MapPin size={13} style={{ flexShrink: 0, color: 'var(--text-muted)' }} />
+            <span>{venue.address || venue.city}</span>
+          </p>
+        </div>
+
         {/* Live Queue Metrics Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '0.6rem',
+          gridTemplateColumns: '1fr 1fr 1fr',
+          gap: '0.5rem',
         }}>
           <div style={{
             background: 'var(--bg-tertiary)',
-            padding: '0.6rem 0.75rem',
-            borderRadius: '9px',
+            padding: '0.55rem 0.6rem',
+            borderRadius: '8px',
             border: '1px solid var(--border-color)',
+            textAlign: 'center',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-secondary)', fontSize: '0.72rem' }}>
-              <Users size={13} style={{ color: 'var(--accent-primary)' }} />
-              <span>Queue Length</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', color: 'var(--text-secondary)', fontSize: '0.7rem' }}>
+              <Users size={12} style={{ color: 'var(--text-secondary)' }} />
+              <span>Queue</span>
             </div>
-            <p style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
-              {queueLen} <span style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--text-muted)' }}>waiting</span>
+            <p style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
+              {queueLen}
             </p>
           </div>
 
           <div style={{
             background: 'var(--bg-tertiary)',
-            padding: '0.6rem 0.75rem',
-            borderRadius: '9px',
+            padding: '0.55rem 0.6rem',
+            borderRadius: '8px',
             border: '1px solid var(--border-color)',
+            textAlign: 'center',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-secondary)', fontSize: '0.72rem' }}>
-              <Clock size={13} style={{ color: 'var(--emerald)' }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', color: 'var(--text-secondary)', fontSize: '0.7rem' }}>
+              <Clock size={12} style={{ color: 'var(--emerald)' }} />
               <span>Est. Wait</span>
             </div>
-            <p style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--emerald)', marginTop: '2px' }}>
-              ~{totalWaitEstimate} <span style={{ fontSize: '0.72rem', fontWeight: 500 }}>mins</span>
+            <p style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--emerald)', marginTop: '2px' }}>
+              ~{totalWaitEstimate}m
+            </p>
+          </div>
+
+          <div style={{
+            background: 'var(--bg-tertiary)',
+            padding: '0.55rem 0.6rem',
+            borderRadius: '8px',
+            border: '1px solid var(--border-color)',
+            textAlign: 'center',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', color: 'var(--text-secondary)', fontSize: '0.7rem' }}>
+              <Layers size={12} style={{ color: 'var(--cyan)' }} />
+              <span>Counters</span>
+            </div>
+            <p style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
+              {safeCounters}
             </p>
           </div>
         </div>
 
-        {/* Queue Status Notice */}
+        {/* Velocity / Notice Tip */}
         <div style={{
           background: 'var(--bg-tertiary)',
           border: '1px solid var(--border-color)',
-          padding: '0.45rem 0.7rem',
+          padding: '0.45rem 0.65rem',
           borderRadius: '6px',
           display: 'flex',
           alignItems: 'center',
@@ -191,28 +215,28 @@ export function VenueCard({ venue, onSelectVenue, onQuickBook }) {
           color: 'var(--text-secondary)',
           lineHeight: 1.35,
         }}>
-          <Clock size={13} style={{ flexShrink: 0, color: 'var(--text-secondary)' }} />
+          <Clock size={12} style={{ flexShrink: 0, color: 'var(--text-muted)' }} />
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {venue.aiTip || `Current queue wait time: ~${totalWaitEstimate} mins.`}
+            {venue.aiTip || `Open: ${venue.openHours || '09:00 AM - 06:00 PM'}`}
           </span>
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.2rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.1rem' }}>
           <button 
             type="button"
             onClick={() => onSelectVenue(venue)}
             className="btn-secondary" 
-            style={{ flex: 1, fontSize: '0.825rem', height: '36px', minHeight: '36px', padding: '0 0.5rem' }}
+            style={{ flex: 1, fontSize: '0.82rem', height: '36px', minHeight: '36px', padding: '0 0.5rem' }}
           >
-            View Details
+            Details
           </button>
           
           <button 
             type="button"
             onClick={() => onQuickBook(venue)}
             className="btn-primary" 
-            style={{ flex: 1, fontSize: '0.825rem', height: '36px', minHeight: '36px', padding: '0 0.5rem' }}
+            style={{ flex: 1.2, fontSize: '0.82rem', height: '36px', minHeight: '36px', padding: '0 0.5rem' }}
           >
             <Ticket size={14} />
             <span>Join Queue</span>

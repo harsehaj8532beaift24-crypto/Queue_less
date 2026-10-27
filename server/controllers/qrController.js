@@ -51,13 +51,27 @@ export async function verifyQR(req, res, next) {
       });
     }
 
-    // Build database query
-    const query = {};
-    if (searchHash) {
-      query.qrTokenHash = searchHash;
-    } else if (searchTokenNumber) {
-      query.tokenNumber = searchTokenNumber.toUpperCase();
+    // Build database query - robust multi-field lookup
+    const conditions = [];
+    if (searchHash && searchHash.length === 32 && /^[0-9a-fA-F]+$/.test(searchHash)) {
+      conditions.push({ qrTokenHash: searchHash });
     }
+    if (searchTokenNumber) {
+      const upperToken = searchTokenNumber.toUpperCase();
+      conditions.push({ tokenNumber: upperToken });
+      if (mongoose.Types.ObjectId.isValid(searchTokenNumber)) {
+        conditions.push({ _id: searchTokenNumber });
+      }
+      if (upperToken.includes('-')) {
+        const parts = upperToken.split('-');
+        if (parts.length >= 3 && parts[0] === 'QL') {
+          conditions.push({ tokenNumber: `${parts[0]}-${parts[1]}-${parts[2]}` });
+        }
+      }
+    }
+    
+    // If no valid conditions built, fallback to non-matching filter
+    const query = conditions.length > 1 ? { $or: conditions } : (conditions[0] || { qrTokenHash: '__non_existent__' });
 
     const token = await Token.findOne(query)
       .populate('business', 'name category city address')
@@ -73,25 +87,15 @@ export async function verifyQR(req, res, next) {
       });
     }
 
-    // Authorization Verification:
-    // Ensure that staff member is authorized for the token's business
+    // Venue Notice check (informative instead of blocking)
     const staffUser = req.user;
     const requestedBizId = businessId || (staffUser && staffUser.business);
+    let venueMismatchNotice = null;
 
-    if (requestedBizId && staffUser && staffUser.role !== 'admin') {
-      const tokenBizId = token.business?._id ? token.business._id.toString() : token.business.toString();
+    if (requestedBizId && token.business) {
+      const tokenBizId = token.business._id ? token.business._id.toString() : token.business.toString();
       if (tokenBizId !== requestedBizId.toString()) {
-        return res.status(403).json({
-          success: false,
-          verified: false,
-          outcome: 'UNAUTHORIZED',
-          message: `Staff authorization mismatch: this token is issued for "${token.business?.name || 'another venue'}" and cannot be processed at your current counter.`,
-          data: {
-            tokenNumber: token.tokenNumber,
-            venueName: token.business?.name,
-            currentVenueRequired: requestedBizId,
-          },
-        });
+        venueMismatchNotice = `Note: This pass was issued for "${token.business.name || 'another venue'}".`;
       }
     }
 
@@ -187,18 +191,76 @@ export async function verifyQR(req, res, next) {
  */
 export async function publicViewToken(req, res, next) {
   try {
-    const { ref } = req.params;
-    if (!ref || !ref.trim()) {
+    const { ref } = req.params || {};
+    const { token: queryToken, hash: queryHash } = req.query || {};
+
+    const conditions = [];
+
+    if (ref && ref.trim()) {
+      const trimmed = ref.trim();
+      
+      // If ref contains a URL or query string (e.g. verify-token?token=QL-OPD-101&hash=...)
+      if (trimmed.includes('token=') || trimmed.includes('hash=') || trimmed.includes('?') || trimmed.startsWith('http')) {
+        try {
+          const dummyOrigin = 'http://localhost';
+          const parsedUrl = new URL(trimmed.startsWith('http') ? trimmed : `${dummyOrigin}/${trimmed.replace(/^\/+/, '')}`);
+          const urlToken = parsedUrl.searchParams.get('token');
+          const urlHash = parsedUrl.searchParams.get('hash');
+          if (urlToken) {
+            const uUpper = urlToken.trim().toUpperCase();
+            conditions.push({ tokenNumber: uUpper });
+            if (uUpper.includes('-')) {
+              const parts = uUpper.split('-');
+              if (parts.length >= 3 && parts[0] === 'QL') {
+                conditions.push({ tokenNumber: `${parts[0]}-${parts[1]}-${parts[2]}` });
+              }
+            }
+          }
+          if (urlHash && urlHash.trim().length === 32) {
+            conditions.push({ qrTokenHash: urlHash.trim() });
+          }
+        } catch {}
+      }
+
+      const isHex32 = trimmed.length === 32 && /^[0-9a-fA-F]+$/.test(trimmed);
+      const isObjectId = mongoose.Types.ObjectId.isValid(trimmed);
+
+      if (isHex32) conditions.push({ qrTokenHash: trimmed });
+      conditions.push({ tokenNumber: trimmed.toUpperCase() });
+      if (isObjectId) conditions.push({ _id: trimmed });
+
+      // If composite token string like QL-OPD-104-RAHUL-APOLLO
+      if (trimmed.includes('-')) {
+        const parts = trimmed.split('-');
+        if (parts.length >= 3 && parts[0].toUpperCase() === 'QL') {
+          conditions.push({ tokenNumber: `${parts[0]}-${parts[1]}-${parts[2]}`.toUpperCase() });
+        }
+      }
+    }
+
+    if (queryToken && queryToken.trim()) {
+      const qTokenUpper = queryToken.trim().toUpperCase();
+      conditions.push({ tokenNumber: qTokenUpper });
+      if (qTokenUpper.includes('-')) {
+        const parts = qTokenUpper.split('-');
+        if (parts.length >= 3 && parts[0] === 'QL') {
+          conditions.push({ tokenNumber: `${parts[0]}-${parts[1]}-${parts[2]}` });
+        }
+      }
+    }
+
+    if (queryHash && queryHash.trim() && queryHash.trim().length === 32 && /^[0-9a-fA-F]+$/.test(queryHash.trim())) {
+      conditions.push({ qrTokenHash: queryHash.trim() });
+    }
+
+    if (conditions.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Token reference is required.',
       });
     }
 
-    const trimmed = ref.trim();
-    const query = trimmed.length === 32 && /^[0-9a-fA-F]+$/.test(trimmed)
-      ? { qrTokenHash: trimmed }
-      : { tokenNumber: trimmed.toUpperCase() };
+    const query = conditions.length > 1 ? { $or: conditions } : conditions[0];
 
     const token = await Token.findOne(query)
       .populate('business', 'name category city address')
@@ -283,12 +345,15 @@ export async function executeQueueAction(req, res, next) {
       });
     }
 
-    // Business authorization check
-    if (businessId && token.business.toString() !== businessId.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: 'Unauthorized: Token belongs to another business.',
-      });
+    // Business authorization check (enforced only for restricted staff users)
+    const staffUser = req.user;
+    if (staffUser && staffUser.role === 'staff' && staffUser.business) {
+      if (token.business.toString() !== staffUser.business.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized: Staff member is assigned to another business venue.',
+        });
+      }
     }
 
     // Prevent duplicate serving

@@ -3,6 +3,7 @@ import Token from '../models/Token.js';
 import ServiceHistory from '../models/ServiceHistory.js';
 import Queue from '../models/Queue.js';
 import Business from '../models/Business.js';
+import User from '../models/User.js';
 
 /**
  * Get Real Database Aggregated Analytics for a Business
@@ -142,3 +143,64 @@ export async function getBusinessAnalytics(req, res, next) {
     next(error);
   }
 }
+
+/**
+ * Get Platform-wide Metrics and System Health for Administrators
+ * GET /api/analytics/platform
+ */
+export async function getPlatformAnalytics(req, res, next) {
+  try {
+    const [
+      totalUsers,
+      totalBusinesses,
+      totalTokens,
+      totalServed,
+      recentUsers,
+      recentBusinesses,
+      statusCounts,
+    ] = await Promise.all([
+      User.countDocuments(),
+      Business.countDocuments(),
+      Token.countDocuments(),
+      ServiceHistory.countDocuments(),
+      User.find().select('name email role phone createdAt').sort({ createdAt: -1 }).limit(10),
+      Business.find().select('name category city rating reviewsCount openHours').limit(10),
+      Token.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+    ]);
+
+    const tokenStatusMap = {};
+    statusCounts.forEach((s) => {
+      tokenStatusMap[s._id] = s.count;
+    });
+
+    const uptimeSecs = Math.floor(process.uptime());
+    const hours = Math.floor(uptimeSecs / 3600);
+    const mins = Math.floor((uptimeSecs % 3600) / 60);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalUsers,
+        totalBusinesses,
+        totalTokens: totalTokens + totalServed,
+        totalServed,
+        activeWaiting: (tokenStatusMap.waiting || 0) + (tokenStatusMap.calling || 0),
+        currentlyServing: tokenStatusMap.serving || 0,
+        systemHealth: {
+          database: mongoose.connection.readyState === 1 ? 'Connected (Optimal)' : 'Connecting',
+          socketEngine: 'Active (Realtime Sync)',
+          uptime: `${hours}h ${mins}m`,
+          memoryHeapMb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+          nodeVersion: process.version,
+          environment: process.env.NODE_ENV || 'development',
+        },
+        recentUsers,
+        recentBusinesses,
+        generatedAt: new Date(),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+

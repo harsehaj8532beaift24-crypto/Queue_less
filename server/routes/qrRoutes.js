@@ -8,6 +8,7 @@ const router = express.Router();
 router.post('/verify', optionalToken, verifyQR);
 
 // Public View for smartphone cameras scanning the QR code
+router.get('/view', publicViewToken);
 router.get('/view/:ref', publicViewToken);
 
 // Execute Queue Action after verified scan (Call, Serve, Complete, Skip)

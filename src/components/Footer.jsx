@@ -1,7 +1,7 @@
 import React from 'react';
-import { Ticket, Code2, HelpCircle, Mail, ShieldCheck } from 'lucide-react';
+import { Ticket, HelpCircle, Mail, ShieldCheck } from 'lucide-react';
 
-export function Footer({ openJsShowcase, onOpenInfo }) {
+export function Footer({ onOpenInfo, onNavigateAuth }) {
   return (
     <footer style={{
       borderTop: '1px solid var(--border-color)',
@@ -54,8 +54,26 @@ export function Footer({ openJsShowcase, onOpenInfo }) {
 
           {/* Help & Support Links */}
           <div>
-            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.85rem' }}>Help & Legal</h4>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.85rem' }}>Account & Policies</h4>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onNavigateAuth && onNavigateAuth('login')}
+                  style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }}
+                >
+                  Sign In to Account
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onNavigateAuth && onNavigateAuth('register')}
+                  style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem' }}
+                >
+                  Create New Account
+                </button>
+              </li>
               <li>
                 <button
                   type="button"
@@ -97,14 +115,6 @@ export function Footer({ openJsShowcase, onOpenInfo }) {
               <span className="badge badge-emerald">Socket.IO</span>
               <span className="badge badge-charcoal">QR Engine</span>
             </div>
-            <button 
-              onClick={openJsShowcase}
-              className="btn-secondary" 
-              style={{ marginTop: '0.85rem', fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
-            >
-              <Code2 size={14} />
-              <span>Syllabus Code Showcase</span>
-            </button>
           </div>
         </div>
 

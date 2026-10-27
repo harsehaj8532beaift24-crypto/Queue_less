@@ -2,20 +2,14 @@ import React, { useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
 import confetti from 'canvas-confetti';
 import {
-  QrCode, 
   Clock, 
-  Users, 
-  Sparkles, 
-  Bell, 
-  CheckCircle2, 
   XCircle, 
-  RotateCcw,
-  Download,
-  Printer,
-  AlertTriangle,
-  ChevronRight,
-  ShieldAlert,
-  FastForward
+  RotateCcw, 
+  Download, 
+  Printer, 
+  FastForward, 
+  QrCode, 
+  ExternalLink 
 } from 'lucide-react';
 
 export function TokenCard({ token, onCancelToken, onPushBackToken, onSimulateStep }) {
@@ -33,10 +27,43 @@ export function TokenCard({ token, onCancelToken, onPushBackToken, onSimulateSte
   // Render QR Code onto Canvas linking directly to public verification URL
   useEffect(() => {
     if (canvasRef.current) {
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
-      const payload = (token.qrCodeData && token.qrCodeData.startsWith('http'))
-        ? token.qrCodeData
-        : `${origin}/verify-token?token=${encodeURIComponent(displayTokenNumber)}&hash=${encodeURIComponent(token.qrTokenHash || 'dev_hash')}`;
+      const tokenNum = displayTokenNumber || token.tokenId || 'TOKEN';
+      const hash = token.qrTokenHash || '';
+      const tokenParam = encodeURIComponent(tokenNum);
+      const hashParam = hash ? `?hash=${encodeURIComponent(hash)}` : '';
+
+      let payload = '';
+
+      // Priority 1: Use backend-generated qrCodeData if it is a valid non-localhost URL
+      if (
+        token.qrCodeData &&
+        typeof token.qrCodeData === 'string' &&
+        token.qrCodeData.startsWith('http') &&
+        !token.qrCodeData.includes('localhost') &&
+        !token.qrCodeData.includes('127.0.0.1')
+      ) {
+        payload = token.qrCodeData;
+      } else {
+        // Priority 2: If current browser window is on a reachable non-localhost origin
+        const isCurrentLocalhost =
+          typeof window !== 'undefined' &&
+          (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+        if (!isCurrentLocalhost && typeof window !== 'undefined') {
+          payload = `${window.location.origin}/token/${tokenParam}${hashParam}`;
+        } else if (
+          token.qrCodeData &&
+          typeof token.qrCodeData === 'string' &&
+          token.qrCodeData.startsWith('http')
+        ) {
+          payload = token.qrCodeData;
+        } else {
+          const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
+          payload = `${origin}/token/${tokenParam}${hashParam}`;
+        }
+      }
+
+      console.log('[QueueLess QR Card] Encoded Pass URL:', payload);
 
       QRCode.toCanvas(
         canvasRef.current,
@@ -264,6 +291,31 @@ export function TokenCard({ token, onCancelToken, onPushBackToken, onSimulateSte
           <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>
             Issued: {token.issuedAt || new Date(token.joinedAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
+
+          <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
+            <a
+              href={`/verify-token?token=${encodeURIComponent(displayTokenNumber)}&hash=${encodeURIComponent(token.qrTokenHash || '3144f0368fe040c383d9a2d44a818223')}`}
+              onClick={(e) => {
+                e.preventDefault();
+                window.history.pushState({}, '', `/verify-token?token=${encodeURIComponent(displayTokenNumber)}&hash=${encodeURIComponent(token.qrTokenHash || '3144f0368fe040c383d9a2d44a818223')}`);
+                window.dispatchEvent(new Event('popstate'));
+              }}
+              className="btn-secondary"
+              style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+            >
+              <ExternalLink size={12} />
+              <span>View Live Pass</span>
+            </a>
+            <button
+              type="button"
+              onClick={handleDownloadQR}
+              className="btn-secondary"
+              style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+            >
+              <Download size={12} />
+              <span>Save Pass</span>
+            </button>
+          </div>
         </div>
       </div>
 
