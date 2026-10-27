@@ -6,7 +6,6 @@ import {
   updateBusiness,
 } from '../controllers/businessController.js';
 import { verifyToken, requireRole } from '../middleware/auth.js';
-
 const router = express.Router();
 
 router.get('/', getAllBusinesses);
