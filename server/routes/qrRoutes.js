@@ -1,5 +1,5 @@
 import express from 'express';
-import { verifyQR, publicViewToken, executeQueueAction } from '../controllers/qrController.js';
+import { verifyQR, publicViewToken, executeQueueAction }from '../controllers/qrController.js';
 import { optionalToken, verifyToken, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
