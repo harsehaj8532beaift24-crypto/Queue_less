@@ -460,6 +460,6 @@ Queue_less/
 ## 👥 Contributors & Academic Credits
 * **Harsehaj**
 * **Avni**
-* **Anupriya**
+* **Harguneet**
 
 *QueueLess — Skip physical lines. Queue remotely from anywhere.*
