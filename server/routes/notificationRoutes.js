@@ -7,5 +7,4 @@ const router = express.Router();
 router.get('/my', optionalToken, getMyNotifications);
 router.patch('/:id/read', verifyToken, markAsRead);
 router.delete('/clear', verifyToken, clearAll);
-
 export default router;
